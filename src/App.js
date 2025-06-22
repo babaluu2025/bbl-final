@@ -26,24 +26,18 @@ export default function App() {
     }, 0);
   };
 
-  const izracunaj = () => {
-    const rashodi = parseBrojevi(unos.rashodi);
-    const dobit = parseBrojevi(unos.dobit);
-    const sumaH = rashodi + dobit;
+  const izracunaj = (d = unos) => {
+    const rashodi = parseBrojevi(d.rashodi);
+    const dobit = parseBrojevi(d.dobit);
+    const saldo = rashodi + dobit;
+    const stvarni = parseFloat(d.pazar || 0) - parseFloat(d.fiskalni || 0) - parseFloat(d.uplacen || 0);
+    const stanjePrethodno = dani.length
+      ? parseFloat([...dani].sort((a, b) => new Date(a.datum) - new Date(b.datum)).at(-1).stanjeKase)
+      : 0;
+    const novoStanje = stanjePrethodno + saldo;
+    const provera = stvarni + saldo;
 
-    const stvarni = parseFloat(unos.pazar || 0) - parseFloat(unos.fiskalni || 0) - parseFloat(unos.uplacen || 0);
-    const stanjePrethodno = dani.length ? parseFloat(dani[dani.length - 1].stanjeKase) : 0;
-    const novoStanje = stanjePrethodno + sumaH;
-    const provjera = stvarni + sumaH;
-
-    return {
-      rashodi,
-      dobit,
-      sumaH,
-      stvarni,
-      novoStanje,
-      provjera
-    };
+    return { rashodi, dobit, saldo, stvarni, novoStanje, provera };
   };
 
   const handleChange = (e) => {
@@ -54,8 +48,6 @@ export default function App() {
     const racun = izracunaj();
     const noviUnos = {
       ...unos,
-      rashodi: unos.rashodi.trim(),
-      dobit: unos.dobit.trim(),
       zakljucano: true,
       stanjeKase: racun.novoStanje.toFixed(2),
     };
@@ -83,39 +75,33 @@ export default function App() {
 
   const otkljucaj = (index) => {
     const dan = dani[index];
-    setUnos(dan);
+    setUnos({ ...dan, zakljucano: false });
     setEditIndex(index);
   };
 
-  const racunajDan = (dan, index) => {
-    const rashodi = parseBrojevi(dan.rashodi);
-    const dobit = parseBrojevi(dan.dobit);
-    const sumaH = rashodi + dobit;
-    const stvarni = parseFloat(dan.pazar || 0) - parseFloat(dan.fiskalni || 0) - parseFloat(dan.uplacen || 0);
-    const prethodnoStanje = index === 0 ? 0 : parseFloat(dani[index - 1].stanjeKase);
-    const stanje = prethodnoStanje + sumaH;
-    const provjera = stvarni + sumaH;
-
-    return {
-      rashodi,
-      dobit,
-      sumaH,
-      stvarni,
-      stanje,
-      provjera
-    };
+  const obrisi = (index) => {
+    if (window.confirm('Da li sigurno želiš da obrišeš ovaj dan?')) {
+      const noviDani = [...dani];
+      noviDani.splice(index, 1);
+      setDani(noviDani);
+      localStorage.setItem('dnevniUnosi', JSON.stringify(noviDani));
+    }
   };
+
+  const sortiraniDani = [...dani].sort(
+    (a, b) => new Date(a.datum) - new Date(b.datum)
+  );
 
   return (
     <div style={{ maxWidth: 600, margin: 'auto', padding: 20 }}>
-      <h2>Dnevni Obračun</h2>
+      <h2>Dnevni obračun</h2>
 
-      <input name="datum" placeholder="Datum" value={unos.datum} onChange={handleChange} disabled={unos.zakljucano} />
-      <input name="pazar" placeholder="Pazar" value={unos.pazar} onChange={handleChange} disabled={unos.zakljucano} />
-      <input name="fiskalni" placeholder="Fiskalni" value={unos.fiskalni} onChange={handleChange} disabled={unos.zakljucano} />
-      <input name="uplacen" placeholder="Uplaćen pazar" value={unos.uplacen} onChange={handleChange} disabled={unos.zakljucano} />
-      <textarea name="rashodi" placeholder="Rashodi (npr: -10 dusko)" rows={3} value={unos.rashodi} onChange={handleChange} disabled={unos.zakljucano} />
-      <textarea name="dobit" placeholder="Keš dobit (npr: +10 marko)" rows={3} value={unos.dobit} onChange={handleChange} disabled={unos.zakljucano} />
+      <input type="date" name="datum" value={unos.datum} onChange={handleChange} />
+      <input name="pazar" placeholder="Pazar" value={unos.pazar} onChange={handleChange} />
+      <input name="fiskalni" placeholder="Fiskalni račun" value={unos.fiskalni} onChange={handleChange} />
+      <input name="uplacen" placeholder="Uplaćen pazar" value={unos.uplacen} onChange={handleChange} />
+      <textarea name="rashodi" placeholder="Rashodi (npr: -10 Mirko)" rows={3} value={unos.rashodi} onChange={handleChange} />
+      <textarea name="dobit" placeholder="Keš dobit (npr: +30 Misko)" rows={3} value={unos.dobit} onChange={handleChange} />
 
       <button onClick={sacuvaj}>
         {editIndex !== null ? 'Sačuvaj izmene' : 'Sačuvaj dan'}
@@ -124,23 +110,38 @@ export default function App() {
       <hr />
 
       <h3>Istorija dana</h3>
-      {dani.map((dan, index) => {
-        const racun = racunajDan(dan, index);
+      {sortiraniDani.map((dan, index) => {
+        const racun = izracunaj(dan);
         return (
-          <div key={index} style={{ border: '1px solid #ccc', padding: 10, marginBottom: 10 }}>
-            <strong>{dan.datum}</strong>  
-            {!dan.zakljucano ? <span style={{ color: 'red' }}> (otključano)</span> : null}
-            <br />
-            Pazar: {dan.pazar} | Fiskalni: {dan.fiskalni} | Uplaćen: {dan.uplacen} <br />
-            Rashodi: {racun.rashodi.toFixed(2)} | Dobit: {racun.dobit.toFixed(2)} <br />
-            H (F+G): {racun.sumaH.toFixed(2)} | E (Stvarni): {racun.stvarni.toFixed(2)} <br />
-            I (Stanje kase): {racun.stanje.toFixed(2)} | J (Provera): {racun.provjera.toFixed(2)} <br />
-            <em>Napomene: </em><br />
-            <pre style={{ whiteSpace: 'pre-wrap' }}>
-              Rashodi: {dan.rashodi || '-'}{'\n'}
-              Dobit: {dan.dobit || '-'}
-            </pre>
-            <button onClick={() => otkljucaj(index)}>✏️ Edituj dan</button>
+          <div key={index} style={{ border: '1px solid #ccc', padding: 10, marginBottom: 15 }}>
+            <strong>📅 {dan.datum}</strong><br /><br />
+
+            <div><strong>Pazar:</strong> {dan.pazar}</div>
+            <div><strong>Fiskalni račun:</strong> {dan.fiskalni}</div>
+            <div><strong>Uplaćen pazar:</strong> {dan.uplacen}</div>
+            <div><strong>Stvarni pazar za uplatu:</strong> {racun.stvarni.toFixed(2)}</div>
+
+            <div style={{ marginTop: 10 }}>
+              <strong>Rashodi:</strong>
+              <pre>{dan.rashodi || '-'}</pre>
+              <strong>Ukupno rashodi:</strong> {racun.rashodi.toFixed(2)}
+            </div>
+
+            <div style={{ marginTop: 10 }}>
+              <strong>Keš dobit:</strong>
+              <pre>{dan.dobit || '-'}</pre>
+              <strong>Ukupno dobit:</strong> {racun.dobit.toFixed(2)}
+            </div>
+
+            <hr />
+            <div><strong>Saldo (rashodi + dobit):</strong> {racun.saldo.toFixed(2)}</div>
+            <div><strong>Stanje u kasi:</strong> {racun.novoStanje.toFixed(2)}</div>
+            <div><strong>Provera uplate:</strong> {racun.provera.toFixed(2)}</div>
+
+            <div style={{ marginTop: 10 }}>
+              <button onClick={() => otkljucaj(index)}>✏️ Edituj dan</button>{' '}
+              <button onClick={() => obrisi(index)} style={{ backgroundColor: '#e74c3c' }}>🗑️ Izbriši dan</button>
+            </div>
           </div>
         );
       })}
