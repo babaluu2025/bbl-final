@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-function DayEntry({ onSave }) {
+function DayEntry({ onSave, initialData }) {
   const [datum, setDatum] = useState('');
   const [fiskalni, setFiskalni] = useState('');
   const [sunmi, setSunmi] = useState('');
@@ -10,7 +10,20 @@ function DayEntry({ onSave }) {
   const [pocetnoStanje, setPocetnoStanje] = useState('');
   const [korekcija, setKorekcija] = useState('');
 
-  // ✅ Zarez pretvaramo u tačku i broj vadimo iz teksta
+  // ⏪ Kada se pozove za edit, popuni formu:
+  useEffect(() => {
+    if (initialData) {
+      setDatum(initialData.datum || '');
+      setFiskalni(initialData.fiskalni?.toString() || '');
+      setSunmi(initialData.sunmi?.toString() || '');
+      setVirmanText(initialData.virmanText || '');
+      setRashodiText(initialData.rashodiText || '');
+      setKesDobitText(initialData.kesDobitText || '');
+      setPocetnoStanje(initialData.pocetnoStanje?.toString() || '');
+      setKorekcija(initialData.korekcija?.toString() || '');
+    }
+  }, [initialData]);
+
   const parseLines = (text) => {
     return text
       .split('\n')
@@ -22,7 +35,6 @@ function DayEntry({ onSave }) {
       .filter((n) => !isNaN(n));
   };
 
-  // ✅ Zaokruživanje na 2 decimale
   const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
   const handleSubmit = (e) => {
@@ -64,7 +76,7 @@ function DayEntry({ onSave }) {
 
     onSave(dan);
 
-    // Resetovanje forme
+    // Reset forme
     setDatum('');
     setFiskalni('');
     setSunmi('');
@@ -77,7 +89,7 @@ function DayEntry({ onSave }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>📘 BBL v2 - Dnevni Bilans</h2>
+      <h2>📘 {initialData ? 'Izmena dana' : 'Unos novog dana'}</h2>
 
       <label>📅 Datum:</label>
       <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
@@ -103,7 +115,7 @@ function DayEntry({ onSave }) {
       <label>✏️ Korekcija kase (npr. +2000 za dodavanje novca):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
-      <button type="submit">💾 Sačuvaj dan</button>
+      <button type="submit">💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}</button>
     </form>
   );
 }
