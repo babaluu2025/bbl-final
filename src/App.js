@@ -1,3 +1,4 @@
+// App.js
 import React, { useState } from 'react';
 import DayEntry from './DayEntry';
 
@@ -36,3 +37,5 @@ function App() {
     </div>
   );
 }
+
+export default App;
