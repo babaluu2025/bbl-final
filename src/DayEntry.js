@@ -26,3 +26,4 @@
 
   <button type="submit">💾 Sačuvaj dan</button>
 </form>
+export default DayEntry;
