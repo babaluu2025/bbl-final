@@ -23,7 +23,6 @@ function DayEntry({ onSave, initialData }) {
     }
   }, [initialData]);
 
-  // ✅ Popravljeno sabiranje iz linija (radi sa + i - brojevima)
   const parseLines = (text) => {
     return text
       .split('\n')
@@ -49,11 +48,12 @@ function DayEntry({ onSave, initialData }) {
     const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
+    // ✅ PRAVE FORMULE:
     const pazar = round(fisk + sun);
-    const stvarnaUplata = round(fisk - virmani);
-    const rezultat = round((sun + kesDobit) - (virmani + rashodi));
-    const uplacenPazar = round(fisk - rezultat);
-    const stanje = round(pocStanje + rezultat + korek);
+    const stvarnaUplata = round(fisk - virmani); // fiskalni - virman
+    const rezultat = round((sun + kesDobit) - rashodi); // samo gotovina
+    const stanje = round(pocStanje + rezultat + korek); // preneseno + dan + korekcija
+    const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi)); // ukupno - rashodi/virmani
 
     const dan = {
       datum,
