@@ -48,12 +48,11 @@ function DayEntry({ onSave, initialData }) {
     const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
-    // ✅ PRAVE FORMULE:
+    const stvarnaUplata = round(fisk - virmani);
+    const rezultat = round((sun + kesDobit) - rashodi);
+    const stanje = round(pocStanje + rezultat + korek);
+    const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
-    const stvarnaUplata = round(fisk - virmani); // fiskalni - virman
-    const rezultat = round((sun + kesDobit) - rashodi); // samo gotovina
-    const stanje = round(pocStanje + rezultat + korek); // preneseno + dan + korekcija
-    const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi)); // ukupno - rashodi/virmani
 
     const dan = {
       datum,
@@ -65,10 +64,10 @@ function DayEntry({ onSave, initialData }) {
       kesDobitText,
       rashodi,
       kesDobit,
-      pazar,
       stvarnaUplata,
       rezultat,
       uplacenPazar,
+      pazar,
       pocetnoStanje: pocStanje,
       korekcija: korek,
       stanje,
@@ -76,7 +75,7 @@ function DayEntry({ onSave, initialData }) {
 
     onSave(dan);
 
-    // Reset forme
+    // Reset
     setDatum('');
     setFiskalni('');
     setSunmi('');
