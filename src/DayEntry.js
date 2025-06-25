@@ -49,7 +49,7 @@ function DayEntry({ onSave, initialData }) {
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
     const stvarnaUplata = round(fisk - virmani);
-    const rezultat = round((sun + kesDobit) - rashodi);
+    const rezultat = round((sun + kesDobit) - rashodi); // ✅ ISPRAVLJENO
     const stanje = round(pocStanje + rezultat + korek);
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
@@ -75,7 +75,7 @@ function DayEntry({ onSave, initialData }) {
 
     onSave(dan);
 
-    // Reset
+    // Reset forme
     setDatum('');
     setFiskalni('');
     setSunmi('');
