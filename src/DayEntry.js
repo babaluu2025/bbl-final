@@ -10,7 +10,6 @@ function DayEntry({ onSave, initialData }) {
   const [pocetnoStanje, setPocetnoStanje] = useState('');
   const [korekcija, setKorekcija] = useState('');
 
-  // ⏪ Kada se pozove za edit, popuni formu:
   useEffect(() => {
     if (initialData) {
       setDatum(initialData.datum || '');
@@ -24,15 +23,16 @@ function DayEntry({ onSave, initialData }) {
     }
   }, [initialData]);
 
+  // ✅ Popravljeno sabiranje iz linija (radi sa + i - brojevima)
   const parseLines = (text) => {
     return text
       .split('\n')
-      .map((line) => {
+      .map(line => {
         const cleaned = line.replace(',', '.');
-        const match = cleaned.match(/-?\d+(\.\d+)?/);
+        const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
         return match ? parseFloat(match[0]) : 0;
       })
-      .filter((n) => !isNaN(n));
+      .filter(n => !isNaN(n));
   };
 
   const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
@@ -100,19 +100,19 @@ function DayEntry({ onSave, initialData }) {
       <label>💵 Sunmi (gotovina iz aparata):</label>
       <input type="text" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
 
-      <label>🏦 Viza i Fakture (jedan po liniji, npr. "+10 Viza"):</label>
+      <label>🏦 Viza i Fakture (npr. +10 viza):</label>
       <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
 
-      <label>💸 Rashodi (jedan po liniji, npr. "-150 Gorivo"):</label>
+      <label>💸 Rashodi (npr. -100 gorivo):</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
 
-      <label>💰 Keš dobit (jedan po liniji, npr. "+200 Mirko"):</label>
+      <label>💰 Keš dobit (npr. +200 mirko):</label>
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
       <label>📦 Početno stanje kase:</label>
       <input type="text" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
 
-      <label>✏️ Korekcija kase (npr. +2000 za dodavanje novca):</label>
+      <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
       <button type="submit">💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}</button>
