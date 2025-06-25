@@ -23,15 +23,17 @@ function DayEntry({ onSave, initialData }) {
     }
   }, [initialData]);
 
-  const parseLines = (text) => {
+  const parseLines = (text, forcePositive = false) => {
     return text
       .split('\n')
       .map(line => {
         const cleaned = line.replace(',', '.');
         const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
-        return match ? parseFloat(match[0]) : 0;
-      })
-      .filter(n => !isNaN(n));
+        if (!match) return 0;
+        let value = parseFloat(match[0]);
+        if (forcePositive) value = Math.abs(value);
+        return isNaN(value) ? 0 : value;
+      });
   };
 
   const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
@@ -39,23 +41,17 @@ function DayEntry({ onSave, initialData }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const rashodiRaw = parseLines(rashodiText);
-    const rashodi = round(rashodiRaw.reduce((a, b) => a + b, 0));
-
-    const kesDobitRaw = parseLines(kesDobitText);
-    const kesDobit = round(kesDobitRaw.reduce((a, b) => a + b, 0));
-
-    const virmaniRaw = parseLines(virmanText);
-    const virmani = round(virmaniRaw.reduce((a, b) => a + b, 0));
+    const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
+    const kesDobit = round(parseLines(kesDobitText).reduce((a, b) => a + b, 0));
+    const virmani = round(parseLines(virmanText).reduce((a, b) => a + b, 0));
 
     const fisk = parseFloat(fiskalni.replace(',', '.')) || 0;
     const sun = parseFloat(sunmi.replace(',', '.')) || 0;
     const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
-    // ✅ RAČUNANJE:
     const stvarnaUplata = round(fisk - virmani);
-    const rezultat = round(sun + kesDobit - rashodi);
+    const rezultat = round(sun + kesDobit - rashodi); // ✅ Sad ispravno
     const stanje = round(pocStanje + rezultat + korek);
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
@@ -81,7 +77,7 @@ function DayEntry({ onSave, initialData }) {
 
     onSave(dan);
 
-    // Reset forme
+    // Reset
     setDatum('');
     setFiskalni('');
     setSunmi('');
