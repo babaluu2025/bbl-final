@@ -1,79 +1,28 @@
-// DayEntry.js
-import React, { useState } from 'react';
+<form onSubmit={handleSubmit}>
+  <h2>📘 BBL v2 - Dnevni Bilans</h2>
+  <label>📅 Datum:</label>
+  <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
 
-function DayEntry({ onSave }) {
-  const [date, setDate] = useState('');
-  const [fiskalni, setFiskalni] = useState(0);
-  const [sunmi, setSunmi] = useState(0);
-  const [virman, setVirman] = useState(0);
-  const [rashodiText, setRashodiText] = useState('');
-  const [kesDobitText, setKesDobitText] = useState('');
-  const [korekcija, setKorekcija] = useState(0);
-  const [pocetnoStanje, setPocetnoStanje] = useState(0);
+  <label>🧾 Fiskalni račun:</label>
+  <input type="number" value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
 
-  const parseValues = (text, sign) => {
-    return text
-      .split('\n')
-      .map(line => parseFloat(line.trim().replace(',', '.')) || 0)
-      .filter(v => !isNaN(v))
-      .reduce((sum, v) => sum + (sign * v), 0);
-  };
+  <label>💵 Sunmi (gotovina iz aparata):</label>
+  <input type="number" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
 
-  const rashodi = parseValues(rashodiText, -1);
-  const kesDobit = parseValues(kesDobitText, 1);
-  const pazar = fiskalni + sunmi;
-  const stvarnaUplata = fiskalni - virman;
-  const rezultat = (sunmi + kesDobit) - (virman + Math.abs(rashodi));
-  const novoStanje = parseFloat(pocetnoStanje) + rezultat + parseFloat(korekcija);
-  const uplacenPazar = fiskalni - rezultat;
+  <label>🏦 Viza i Virman (kartice, računi):</label>
+  <input type="number" value={virman} onChange={(e) => setVirman(e.target.value)} />
 
-  const handleSave = () => {
-    const entry = {
-      date,
-      fiskalni,
-      sunmi,
-      pazar,
-      virman,
-      stvarnaUplata,
-      rashodiText,
-      rashodi,
-      kesDobitText,
-      kesDobit,
-      rezultat,
-      korekcija,
-      pocetnoStanje,
-      novoStanje,
-      uplacenPazar,
-    };
-    onSave(entry);
-    reset();
-  };
+  <label>💸 Rashodi (jedan po liniji, npr. "-150 Gorivo"):</label>
+  <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
 
-  const reset = () => {
-    setDate('');
-    setFiskalni(0);
-    setSunmi(0);
-    setVirman(0);
-    setRashodiText('');
-    setKesDobitText('');
-    setKorekcija(0);
-    setPocetnoStanje(0);
-  };
+  <label>💰 Keš dobit (jedan po liniji, npr. "+200 Mirko"):</label>
+  <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
-  return (
-    <div className="day-entry">
-      <h2>Unos za dan</h2>
-      <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-      <input type="number" placeholder="Fiskalni" value={fiskalni} onChange={e => setFiskalni(+e.target.value)} />
-      <input type="number" placeholder="Sunmi" value={sunmi} onChange={e => setSunmi(+e.target.value)} />
-      <input type="number" placeholder="Viza i Virman" value={virman} onChange={e => setVirman(+e.target.value)} />
-      <textarea placeholder="Rashodi (jedan po liniji)" value={rashodiText} onChange={e => setRashodiText(e.target.value)} />
-      <textarea placeholder="Keš dobit (jedan po liniji)" value={kesDobitText} onChange={e => setKesDobitText(e.target.value)} />
-      <input type="number" placeholder="Početno stanje kase" value={pocetnoStanje} onChange={e => setPocetnoStanje(+e.target.value)} />
-      <input type="number" placeholder="Korekcija (+/-)" value={korekcija} onChange={e => setKorekcija(+e.target.value)} />
-      <button onClick={handleSave}>Sačuvaj dan</button>
-    </div>
-  );
-}
+  <label>📦 Početno stanje kase:</label>
+  <input type="number" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
 
-export default DayEntry;
+  <label>✏️ Korekcija kase (npr. +2000 za dodavanje novca):</label>
+  <input type="number" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
+
+  <button type="submit">💾 Sačuvaj dan</button>
+</form>
