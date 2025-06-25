@@ -1,3 +1,4 @@
+// DayEntry.js
 import React, { useState } from 'react';
 
 function DayEntry({ onSave }) {
@@ -74,3 +75,5 @@ function DayEntry({ onSave }) {
     </div>
   );
 }
+
+export default DayEntry;
