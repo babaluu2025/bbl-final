@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 
 function DayEntry({ onSave }) {
   const [datum, setDatum] = useState('');
-  const [fiskalni, setFiskalni] = useState(0);
-  const [sunmi, setSunmi] = useState(0);
-  const [virman, setVirman] = useState(0);
+  const [fiskalni, setFiskalni] = useState('');
+  const [sunmi, setSunmi] = useState('');
+  const [virmanText, setVirmanText] = useState('');
   const [rashodiText, setRashodiText] = useState('');
   const [kesDobitText, setKesDobitText] = useState('');
-  const [pocetnoStanje, setPocetnoStanje] = useState(0);
-  const [korekcija, setKorekcija] = useState(0);
+  const [pocetnoStanje, setPocetnoStanje] = useState('');
+  const [korekcija, setKorekcija] = useState('');
 
   const parseLines = (text) => {
     return text
@@ -20,20 +20,27 @@ function DayEntry({ onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const rashodi = parseLines(rashodiText).reduce((a, b) => a + b, 0); // Negativni
-    const kesDobit = parseLines(kesDobitText).reduce((a, b) => a + b, 0); // Pozitivni
+    const rashodi = parseLines(rashodiText).reduce((a, b) => a + b, 0);
+    const kesDobit = parseLines(kesDobitText).reduce((a, b) => a + b, 0);
+    const virmani = parseLines(virmanText).reduce((a, b) => a + b, 0);
 
-    const pazar = parseFloat(fiskalni) + parseFloat(sunmi);
-    const stvarnaUplata = parseFloat(fiskalni) - (parseFloat(virman) || 0);
-    const rezultat = (parseFloat(sunmi) + kesDobit) - (parseFloat(virman) + Math.abs(rashodi));
-    const uplacenPazar = parseFloat(fiskalni) - rezultat;
-    const stanje = parseFloat(pocetnoStanje) + rezultat + parseFloat(korekcija);
+    const fisk = parseFloat(fiskalni) || 0;
+    const sun = parseFloat(sunmi) || 0;
+    const korek = parseFloat(korekcija) || 0;
+    const pocStanje = parseFloat(pocetnoStanje) || 0;
+
+    const pazar = fisk + sun;
+    const stvarnaUplata = fisk - virmani;
+    const rezultat = (sun + kesDobit) - (virmani + Math.abs(rashodi));
+    const uplacenPazar = fisk - rezultat;
+    const stanje = pocStanje + rezultat + korek;
 
     const dan = {
       datum,
-      fiskalni: parseFloat(fiskalni),
-      sunmi: parseFloat(sunmi),
-      virman: parseFloat(virman),
+      fiskalni: fisk,
+      sunmi: sun,
+      virmanText,
+      virmani,
       rashodiText,
       kesDobitText,
       rashodi,
@@ -42,22 +49,22 @@ function DayEntry({ onSave }) {
       stvarnaUplata,
       rezultat,
       uplacenPazar,
-      pocetnoStanje: parseFloat(pocetnoStanje),
-      korekcija: parseFloat(korekcija),
+      pocetnoStanje: pocStanje,
+      korekcija: korek,
       stanje,
     };
 
     onSave(dan);
 
-    // Reset forme (opciono)
+    // Reset forme
     setDatum('');
-    setFiskalni(0);
-    setSunmi(0);
-    setVirman(0);
+    setFiskalni('');
+    setSunmi('');
+    setVirmanText('');
     setRashodiText('');
     setKesDobitText('');
-    setPocetnoStanje(0);
-    setKorekcija(0);
+    setPocetnoStanje('');
+    setKorekcija('');
   };
 
   return (
@@ -73,8 +80,8 @@ function DayEntry({ onSave }) {
       <label>💵 Sunmi (gotovina iz aparata):</label>
       <input type="number" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
 
-      <label>🏦 Viza i Virman (kartice, računi):</label>
-      <input type="number" value={virman} onChange={(e) => setVirman(e.target.value)} />
+      <label>🏦 Viza i Fakture (jedan po liniji, npr. "+10 Viza"):</label>
+      <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
 
       <label>💸 Rashodi (jedan po liniji, npr. "-150 Gorivo"):</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
