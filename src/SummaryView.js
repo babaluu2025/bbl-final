@@ -66,7 +66,6 @@ function SummaryView() {
           ${formatField("✏️ Korekcija:", entry.korekcija)}
           ${formatField("💼 Stanje kase:", entry.stanjeKase)}
           ${formatField("✅ Uplaćen pazar:", entry.uplacenPazar)}
-          <br><br>
         </body>
       </html>
     `);
@@ -76,9 +75,7 @@ function SummaryView() {
 
   return (
     <div className="summary-container">
-      <div className="summary-header">
-        <h2>📂 Sumarni pregled</h2>
-      </div>
+      <h2>📂 Sumarni pregled</h2>
 
       <label>📅 Izaberi mjesec:</label>
       <input
@@ -87,8 +84,47 @@ function SummaryView() {
         onChange={(e) => setSelectedMonth(e.target.value)}
       />
 
-      <label style={{ marginTop: 10 }}>🗓️ Početni datum nedjelje:</label>
+      <br />
+
+      <label>🗓️ Početni datum nedjelje:</label>
       <input
         type="date"
         value={selectedWeek}
-        onChange={(e)
+        onChange={(e) => setSelectedWeek(e.target.value)}
+      />
+
+      <hr />
+
+      {getWeekFiltered()
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map((entry) => (
+          <div
+            key={entry.id}
+            style={{
+              marginBottom: 30,
+              padding: 20,
+              border: "1px solid #ccc",
+              borderRadius: 5,
+            }}
+          >
+            <h3>📆 {entry.date}</h3>
+            <p><strong>🧾 Fiskalni:</strong> {entry.fiskalni}</p>
+            <p><strong>💵 Sunmi:</strong> {entry.sunmi}</p>
+            <p><strong>📊 Pazar:</strong> {entry.pazar}</p>
+            <p><strong>📉 Stvarni pazar za uplatu:</strong> {entry.stvarniPazar}</p>
+            <p><strong>🏦 Viza i Fakture:</strong> {entry.viza}</p>
+            <p><strong>💸 Rashodi:</strong> {entry.rashodi}</p>
+            <p><strong>💰 Keš dobit:</strong> {entry.kesDobit}</p>
+            <p><strong>🧮 Rezultat dana:</strong> {entry.rezultatDana}</p>
+            <p><strong>📦 Početno stanje:</strong> {entry.pocetnoStanje}</p>
+            <p><strong>✏️ Korekcija:</strong> {entry.korekcija}</p>
+            <p><strong>💼 Stanje kase:</strong> {entry.stanjeKase}</p>
+            <p><strong>✅ Uplaćen pazar:</strong> {entry.uplacenPazar}</p>
+            <button onClick={() => printDay(entry)}>🖨️ Štampaj ovaj dan</button>
+          </div>
+        ))}
+    </div>
+  );
+}
+
+export default SummaryView;
