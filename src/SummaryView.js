@@ -17,12 +17,15 @@ function SummaryView() {
       });
       setAllEntries(entries);
     };
+
     fetchEntries();
   }, []);
 
   const getMonthFiltered = () => {
     if (!selectedMonth) return allEntries;
-    return allEntries.filter((entry) => entry.date?.startsWith(selectedMonth));
+    return allEntries.filter((entry) =>
+      entry.date?.startsWith(selectedMonth)
+    );
   };
 
   const getWeekFiltered = () => {
@@ -36,55 +39,55 @@ function SummaryView() {
     });
   };
 
-  const formatField = (label, value) => {
-    return `<strong>${label}</strong> ${value || "-"}<br>`;
-  };
-
-  const printDay = (entry) => {
+  const printFormattedDay = (entry) => {
     const newWindow = window.open();
     newWindow.document.write(`
       <html>
         <head>
-          <title>Štampanje dana ${entry.date}</title>
+          <title>Štampa – ${entry.date}</title>
           <style>
-            body { font-family: Arial; padding: 20px; }
-            h2 { margin-bottom: 10px; }
-            .line { margin-bottom: 5px; }
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              white-space: pre-wrap;
+            }
+            h2 { text-align: center; }
+            .block { margin-bottom: 15px; }
           </style>
         </head>
         <body>
-          <h2>📅 ${entry.date}</h2>
-          ${formatField("🧾 Fiskalni:", entry.fiskalni)}
-          ${formatField("💵 Sunmi:", entry.sunmi)}
-          ${formatField("📊 Pazar:", entry.pazar)}
-          ${formatField("📉 Stvarni pazar za uplatu:", entry.stvarniPazar)}
-          ${formatField("🏦 Viza i Fakture:", entry.viza)}
-          ${formatField("💸 Rashodi:", entry.rashodi)}
-          ${formatField("💰 Keš dobit:", entry.kesDobit)}
-          ${formatField("🧮 Rezultat dana:", entry.rezultatDana)}
-          ${formatField("📦 Početno stanje:", entry.pocetnoStanje)}
-          ${formatField("✏️ Korekcija:", entry.korekcija)}
-          ${formatField("💼 Stanje kase:", entry.stanjeKase)}
-          ${formatField("✅ Uplaćen pazar:", entry.uplacenPazar)}
+          <h2>📆 Dan: ${entry.date}</h2>
+          <div class="block">🧾 Fiskalni: ${entry.fiskalni}</div>
+          <div class="block">💵 Sunmi: ${entry.sunmi}</div>
+          <div class="block">📊 Pazar: ${entry.pazar}</div>
+          <div class="block">📉 Stvarni pazar za uplatu: ${entry.stvarniPazar}</div>
+          <div class="block">🏦 Viza i Fakture:\n${entry.vizaFakture}</div>
+          <div class="block">💸 Rashodi:\n${entry.rashodi}</div>
+          <div class="block">💰 Keš dobit:\n${entry.kesDobit}</div>
+          <div class="block">🧮 Rezultat dana: ${entry.rezultatDana}</div>
+          <div class="block">📦 Početno stanje: ${entry.pocetnoStanje}</div>
+          <div class="block">✏️ Korekcija: ${entry.korekcija}</div>
+          <div class="block">💼 Stanje kase: ${entry.stanjeKase}</div>
+          <div class="block">✅ Uplaćen pazar: ${entry.uplacenPazar}</div>
         </body>
       </html>
     `);
-    newWindow.document.close();
     newWindow.print();
+    newWindow.close();
   };
 
   return (
-    <div className="summary-container">
+    <div style={{ padding: 20 }}>
       <h2>📂 Sumarni pregled</h2>
 
-      <label>📅 Izaberi mjesec:</label>
+      <label>📅 Mjesec:</label>
       <input
         type="month"
         value={selectedMonth}
         onChange={(e) => setSelectedMonth(e.target.value)}
       />
 
-      <br />
+      <br /><br />
 
       <label>🗓️ Početni datum nedjelje:</label>
       <input
@@ -98,29 +101,29 @@ function SummaryView() {
       {getWeekFiltered()
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .map((entry) => (
-          <div
-            key={entry.id}
-            style={{
-              marginBottom: 30,
-              padding: 20,
-              border: "1px solid #ccc",
-              borderRadius: 5,
-            }}
-          >
+          <div key={entry.id} style={{
+            marginBottom: 30,
+            padding: 20,
+            border: "1px solid #ccc",
+            borderRadius: 5,
+            background: "#fafafa"
+          }}>
             <h3>📆 {entry.date}</h3>
-            <p><strong>🧾 Fiskalni:</strong> {entry.fiskalni}</p>
-            <p><strong>💵 Sunmi:</strong> {entry.sunmi}</p>
-            <p><strong>📊 Pazar:</strong> {entry.pazar}</p>
-            <p><strong>📉 Stvarni pazar za uplatu:</strong> {entry.stvarniPazar}</p>
-            <p><strong>🏦 Viza i Fakture:</strong> {entry.viza}</p>
-            <p><strong>💸 Rashodi:</strong> {entry.rashodi}</p>
-            <p><strong>💰 Keš dobit:</strong> {entry.kesDobit}</p>
-            <p><strong>🧮 Rezultat dana:</strong> {entry.rezultatDana}</p>
-            <p><strong>📦 Početno stanje:</strong> {entry.pocetnoStanje}</p>
-            <p><strong>✏️ Korekcija:</strong> {entry.korekcija}</p>
-            <p><strong>💼 Stanje kase:</strong> {entry.stanjeKase}</p>
-            <p><strong>✅ Uplaćen pazar:</strong> {entry.uplacenPazar}</p>
-            <button onClick={() => printDay(entry)}>🖨️ Štampaj ovaj dan</button>
+            <div><b>Fiskalni:</b> {entry.fiskalni}</div>
+            <div><b>Sunmi:</b> {entry.sunmi}</div>
+            <div><b>Pazar:</b> {entry.pazar}</div>
+            <div><b>Stvarni pazar za uplatu:</b> {entry.stvarniPazar}</div>
+            <div><b>Viza i Fakture:</b> <pre>{entry.vizaFakture}</pre></div>
+            <div><b>Rashodi:</b> <pre>{entry.rashodi}</pre></div>
+            <div><b>Keš dobit:</b> <pre>{entry.kesDobit}</pre></div>
+            <div><b>Rezultat dana:</b> {entry.rezultatDana}</div>
+            <div><b>Početno stanje:</b> {entry.pocetnoStanje}</div>
+            <div><b>Korekcija:</b> {entry.korekcija}</div>
+            <div><b>Stanje kase:</b> {entry.stanjeKase}</div>
+            <div><b>Uplaćen pazar:</b> {entry.uplacenPazar}</div>
+
+            <br />
+            <button onClick={() => printFormattedDay(entry)}>🖨️ Štampaj ovaj dan</button>
           </div>
         ))}
     </div>
