@@ -1,4 +1,5 @@
 // App.js
+<Route path="/summary" element={<SummaryView />} />
 import React, { useEffect, useState } from "react";
 import DayEntry from "./DayEntry";
 import { db } from "./firebase";
