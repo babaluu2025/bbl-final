@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import DayEntry from "./DayEntry";
-import DayList from "./DayList";
 import SummaryView from "./SummaryView"; // Dodaj ovo!
 
 function App() {
@@ -20,9 +19,6 @@ function App() {
             path="/"
             element={<DayEntry onSave={handleSave} initialData={editData} />}
           />
-          <Route
-            path="/days"
-            element={<DayList onEdit={(data) => setEditData(data)} />}
           />
           <Route
             path="/summary"
