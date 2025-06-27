@@ -1,5 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "./firebase";
 import DayEntry from "./DayEntry";          // Glavna komponenta za unos dana
 import SummaryView from "./SummaryView";    // Nova komponenta za sumarno
 
