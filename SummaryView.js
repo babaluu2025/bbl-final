@@ -1,1 +1,0 @@
-// Sadržaj SummaryView.js ide ovde
