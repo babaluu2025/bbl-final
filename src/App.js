@@ -6,7 +6,33 @@ import DayEntry from "./DayEntry";          // Glavna komponenta za unos dana
 import SummaryView from "./SummaryView";    // Nova komponenta za sumarno
 
 function App() {
+ const [days, setDays] = useState([]);
+
+  const fetchDays = async () => {
+    const querySnapshot = await getDocs(collection(db, "days"));
+    const list = [];
+    querySnapshot.forEach((doc) => {
+      list.push({ id: doc.id, ...doc.data() });
+    });
+    setDays(list);
+  };
+
+  useEffect(() => {
+    fetchDays();
+  }, []);
+  
   return (
+     <div>
+      <DayEntry onSave={fetchDays} />
+      <h2>📅 Sačuvani dani:</h2>
+      <ul>
+        {days.map((day) => (
+          <li key={day.id}>{day.datum}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
     <Router>
       <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
         <h1>📘 BBL Billing App</h1>
