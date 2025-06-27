@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "./firebase";
 import { collection, getDocs } from "firebase/firestore";
-import "./SummaryView.css";
 
 function SummaryView() {
   const [allEntries, setAllEntries] = useState([]);
@@ -22,13 +21,15 @@ function SummaryView() {
 
   const getMonthFiltered = () => {
     if (!selectedMonth) return allEntries;
-    return allEntries.filter((entry) => entry.date?.startsWith(selectedMonth));
+    return allEntries.filter((entry) =>
+      entry.datum?.startsWith(selectedMonth)
+    );
   };
 
   const getWeekFiltered = () => {
     if (!selectedWeek) return getMonthFiltered();
     return getMonthFiltered().filter((entry) => {
-      const day = new Date(entry.date);
+      const day = new Date(entry.datum);
       const weekStart = new Date(selectedWeek);
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
@@ -36,59 +37,82 @@ function SummaryView() {
     });
   };
 
-  const formatField = (label, value) => {
-    return `<strong>${label}</strong> ${value || "-"}<br>`;
-  };
-
   const printDay = (entry) => {
-    const newWindow = window.open();
-    newWindow.document.write(`
-      <html>
-        <head>
-          <title>Štampanje dana ${entry.date}</title>
-          <style>
-            body { font-family: Arial; padding: 20px; }
-            h2 { margin-bottom: 10px; }
-            .line { margin-bottom: 5px; }
-          </style>
-        </head>
-        <body>
-          <h2>📅 ${entry.date}</h2>
-          ${formatField("🧾 Fiskalni:", entry.fiskalni)}
-          ${formatField("💵 Sunmi:", entry.sunmi)}
-          ${formatField("📊 Pazar:", entry.pazar)}
-          ${formatField("📉 Stvarni pazar za uplatu:", entry.stvarniPazar)}
-          ${formatField("🏦 Viza i Fakture:", entry.viza)}
-          ${formatField("💸 Rashodi:", entry.rashodi)}
-          ${formatField("💰 Keš dobit:", entry.kesDobit)}
-          ${formatField("🧮 Rezultat dana:", entry.rezultatDana)}
-          ${formatField("📦 Početno stanje:", entry.pocetnoStanje)}
-          ${formatField("✏️ Korekcija:", entry.korekcija)}
-          ${formatField("💼 Stanje kase:", entry.stanjeKase)}
-          ${formatField("✅ Uplaćen pazar:", entry.uplacenPazar)}
-          <br><br>
-        </body>
-      </html>
-    `);
+    const newWindow = window.open("", "_blank");
+    const content = `
+      <html><head><title>Štampa dana</title></head><body style="font-family: sans-serif">
+        <h2>📅 Datum: ${entry.datum}</h2>
+        <p>🧾 Fiskalni: ${entry.fiskalni}</p>
+        <p>💵 Sunmi: ${entry.sunmi}</p>
+        <p>📊 Pazar: ${entry.pazar}</p>
+        <p>📉 Stvarni pazar za uplatu: ${entry.stvarnaUplata}</p>
+        <p>🏦 Viza i Fakture: ${entry.virmanText} <br/> Ukupno: ${entry.virmani}</p>
+        <p>💸 Rashodi: ${entry.rashodiText} <br/> Ukupno: ${entry.rashodi}</p>
+        <p>💰 Keš dobit: ${entry.kesDobitText} <br/> Ukupno: ${entry.kesDobit}</p>
+        <p>🧮 Rezultat dana: ${entry.rezultat}</p>
+        <p>📦 Početno stanje kase: ${entry.pocetnoStanje}</p>
+        <p>✏️ Korekcija: ${entry.korekcija}</p>
+        <p>💼 Stanje kase: ${entry.stanje}</p>
+        <p>✅ Uplaćen pazar: ${entry.uplacenPazar}</p>
+      </body></html>`;
+    newWindow.document.write(content);
     newWindow.document.close();
     newWindow.print();
   };
 
   return (
-    <div className="summary-container">
-      <div className="summary-header">
-        <h2>📂 Sumarni pregled</h2>
-      </div>
+    <div style={{ padding: 20 }}>
+      <h2>📂 Sumarni pregled</h2>
 
-      <label>📅 Izaberi mjesec:</label>
+      <label>📅 Izaberi mjesec (npr. 2025-06):</label>
       <input
         type="month"
         value={selectedMonth}
         onChange={(e) => setSelectedMonth(e.target.value)}
       />
 
-      <label style={{ marginTop: 10 }}>🗓️ Početni datum nedjelje:</label>
+      <br />
+
+      <label>🗓️ Izaberi početni datum nedjelje:</label>
       <input
         type="date"
         value={selectedWeek}
-        onChange={(e)
+        onChange={(e) => setSelectedWeek(e.target.value)}
+      />
+
+      <hr />
+
+      {getWeekFiltered()
+        .sort((a, b) => new Date(a.datum) - new Date(b.datum))
+        .map((entry) => (
+          <div
+            key={entry.id}
+            style={{
+              marginBottom: 30,
+              padding: 20,
+              border: "1px solid #ccc",
+              borderRadius: 5,
+              background: "#f9f9f9",
+            }}
+          >
+            <h3>📆 {entry.datum}</h3>
+            <p>🧾 Fiskalni: {entry.fiskalni}</p>
+            <p>💵 Sunmi: {entry.sunmi}</p>
+            <p>📊 Pazar: {entry.pazar}</p>
+            <p>📉 Stvarni pazar za uplatu: {entry.stvarnaUplata}</p>
+            <p>🏦 Viza i Fakture: {entry.virmanText} <br /> <strong>Ukupno: {entry.virmani}</strong></p>
+            <p>💸 Rashodi: {entry.rashodiText} <br /> <strong>Ukupno: {entry.rashodi}</strong></p>
+            <p>💰 Keš dobit: {entry.kesDobitText} <br /> <strong>Ukupno: {entry.kesDobit}</strong></p>
+            <p>🧮 Rezultat dana: {entry.rezultat}</p>
+            <p>📦 Početno stanje kase: {entry.pocetnoStanje}</p>
+            <p>✏️ Korekcija: {entry.korekcija}</p>
+            <p>💼 Stanje kase: {entry.stanje}</p>
+            <p>✅ Uplaćen pazar: {entry.uplacenPazar}</p>
+            <button onClick={() => printDay(entry)}>🖨️ Štampaj ovaj dan</button>
+          </div>
+        ))}
+    </div>
+  );
+}
+
+export default SummaryView;
