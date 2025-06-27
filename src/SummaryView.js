@@ -39,32 +39,51 @@ function SummaryView() {
 
   const printDay = (entry) => {
     const newWindow = window.open("", "_blank");
-    const content = `
-      <html><head><title>Štampa dana</title></head><body style="font-family: sans-serif">
-        <h2>📅 Datum: ${entry.datum}</h2>
-        <p>🧾 Fiskalni: ${entry.fiskalni}</p>
-        <p>💵 Sunmi: ${entry.sunmi}</p>
-        <p>📊 Pazar: ${entry.pazar}</p>
-        <p>📉 Stvarni pazar za uplatu: ${entry.stvarnaUplata}</p>
-        <p>🏦 Viza i Fakture: ${entry.virmanText} <br/> Ukupno: ${entry.virmani}</p>
-        <p>💸 Rashodi: ${entry.rashodiText} <br/> Ukupno: ${entry.rashodi}</p>
-        <p>💰 Keš dobit: ${entry.kesDobitText} <br/> Ukupno: ${entry.kesDobit}</p>
-        <p>🧮 Rezultat dana: ${entry.rezultat}</p>
-        <p>📦 Početno stanje kase: ${entry.pocetnoStanje}</p>
-        <p>✏️ Korekcija: ${entry.korekcija}</p>
-        <p>💼 Stanje kase: ${entry.stanje}</p>
-        <p>✅ Uplaćen pazar: ${entry.uplacenPazar}</p>
-      </body></html>`;
-    newWindow.document.write(content);
+    const html = `
+      <html>
+      <head>
+        <title>Štampa dana</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; }
+          h2 { margin-bottom: 10px; }
+          p { margin: 4px 0; }
+        </style>
+      </head>
+      <body>
+        <h2>📆 Datum: ${entry.datum}</h2>
+        <p>🧾 Fiskalni: ${format(entry.fiskalni)} €</p>
+        <p>💵 Sunmi: ${format(entry.sunmi)} €</p>
+        <p>📊 Pazar: ${format(entry.pazar)} €</p>
+        <p>📉 Stvarni pazar za uplatu: ${format(entry.stvarnaUplata)} €</p>
+        <p>🏦 Viza i Fakture:<br/>${entry.virmanText.replace(/\n/g, "<br/>")}<br/><strong>Ukupno: ${format(entry.virmani)} €</strong></p>
+        <p>💸 Rashodi:<br/>${entry.rashodiText.replace(/\n/g, "<br/>")}<br/><strong>Ukupno: ${format(entry.rashodi)} €</strong></p>
+        <p>💰 Keš dobit:<br/>${entry.kesDobitText.replace(/\n/g, "<br/>")}<br/><strong>Ukupno: ${format(entry.kesDobit)} €</strong></p>
+        <p>🧮 Rezultat dana: ${format(entry.rezultat)} €</p>
+        <p>📦 Početno stanje kase: ${format(entry.pocetnoStanje)} €</p>
+        <p>✏️ Korekcija: ${format(entry.korekcija)} €</p>
+        <p>💼 Stanje kase: ${format(entry.stanje)} €</p>
+        <p>✅ Uplaćen pazar: ${format(entry.uplacenPazar)} €</p>
+      </body>
+      </html>
+    `;
+    newWindow.document.write(html);
     newWindow.document.close();
     newWindow.print();
   };
 
+  const format = (n) =>
+    typeof n === "number"
+      ? n.toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : n;
+
   return (
     <div style={{ padding: 20 }}>
-      <h2>📂 Sumarni pregled</h2>
+      <h2>📂 Sumarni pregled dana</h2>
 
-      <label>📅 Izaberi mjesec (npr. 2025-06):</label>
+      <label>📅 Izaberi mjesec:</label>
       <input
         type="month"
         value={selectedMonth}
@@ -72,7 +91,6 @@ function SummaryView() {
       />
 
       <br />
-
       <label>🗓️ Izaberi početni datum nedjelje:</label>
       <input
         type="date"
@@ -92,22 +110,36 @@ function SummaryView() {
               padding: 20,
               border: "1px solid #ccc",
               borderRadius: 5,
-              background: "#f9f9f9",
+              background: "#fffbe6",
             }}
           >
             <h3>📆 {entry.datum}</h3>
-            <p>🧾 Fiskalni: {entry.fiskalni}</p>
-            <p>💵 Sunmi: {entry.sunmi}</p>
-            <p>📊 Pazar: {entry.pazar}</p>
-            <p>📉 Stvarni pazar za uplatu: {entry.stvarnaUplata}</p>
-            <p>🏦 Viza i Fakture: {entry.virmanText} <br /> <strong>Ukupno: {entry.virmani}</strong></p>
-            <p>💸 Rashodi: {entry.rashodiText} <br /> <strong>Ukupno: {entry.rashodi}</strong></p>
-            <p>💰 Keš dobit: {entry.kesDobitText} <br /> <strong>Ukupno: {entry.kesDobit}</strong></p>
-            <p>🧮 Rezultat dana: {entry.rezultat}</p>
-            <p>📦 Početno stanje kase: {entry.pocetnoStanje}</p>
-            <p>✏️ Korekcija: {entry.korekcija}</p>
-            <p>💼 Stanje kase: {entry.stanje}</p>
-            <p>✅ Uplaćen pazar: {entry.uplacenPazar}</p>
+            <p>🧾 Fiskalni: {format(entry.fiskalni)} €</p>
+            <p>💵 Sunmi: {format(entry.sunmi)} €</p>
+            <p>📊 Pazar: {format(entry.pazar)} €</p>
+            <p>📉 Stvarni pazar za uplatu: {format(entry.stvarnaUplata)} €</p>
+
+            <p>🏦 Viza i Fakture:<br />
+              <pre style={{ whiteSpace: "pre-wrap" }}>{entry.virmanText}</pre>
+              <strong>Ukupno: {format(entry.virmani)} €</strong>
+            </p>
+
+            <p>💸 Rashodi:<br />
+              <pre style={{ whiteSpace: "pre-wrap" }}>{entry.rashodiText}</pre>
+              <strong>Ukupno: {format(entry.rashodi)} €</strong>
+            </p>
+
+            <p>💰 Keš dobit:<br />
+              <pre style={{ whiteSpace: "pre-wrap" }}>{entry.kesDobitText}</pre>
+              <strong>Ukupno: {format(entry.kesDobit)} €</strong>
+            </p>
+
+            <p>🧮 Rezultat dana: {format(entry.rezultat)} €</p>
+            <p>📦 Početno stanje kase: {format(entry.pocetnoStanje)} €</p>
+            <p>✏️ Korekcija: {format(entry.korekcija)} €</p>
+            <p>💼 Stanje kase: {format(entry.stanje)} €</p>
+            <p>✅ Uplaćen pazar: {format(entry.uplacenPazar)} €</p>
+
             <button onClick={() => printDay(entry)}>🖨️ Štampaj ovaj dan</button>
           </div>
         ))}
