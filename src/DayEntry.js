@@ -24,34 +24,30 @@ function DayEntry({ onSave, initialData }) {
   }, [initialData]);
 
   const parseLines = (text, forcePositive = false) => {
-    return text
-      .split('\n')
-      .map(line => {
-        const cleaned = line.replace(',', '.');
-        const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
-        if (!match) return 0;
-        let value = parseFloat(match[0]);
-        if (forcePositive) value = Math.abs(value);
-        return isNaN(value) ? 0 : value;
-      });
+    return text.split('\n').map(line => {
+      const cleaned = line.replace(',', '.');
+      const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
+      if (!match) return 0;
+      let value = parseFloat(match[0]);
+      if (forcePositive) value = Math.abs(value);
+      return isNaN(value) ? 0 : value;
+    });
   };
 
   const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
     const kesDobit = round(parseLines(kesDobitText).reduce((a, b) => a + b, 0));
     const virmani = round(parseLines(virmanText).reduce((a, b) => a + b, 0));
-
     const fisk = parseFloat(fiskalni.replace(',', '.')) || 0;
     const sun = parseFloat(sunmi.replace(',', '.')) || 0;
     const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
     const stvarnaUplata = round(fisk - virmani);
-    const rezultat = round(sun + kesDobit - rashodi); // ✅ Sad ispravno
+    const rezultat = round(sun + kesDobit - rashodi);
     const stanje = round(pocStanje + rezultat + korek);
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
@@ -77,7 +73,6 @@ function DayEntry({ onSave, initialData }) {
 
     onSave(dan);
 
-    // Reset
     setDatum('');
     setFiskalni('');
     setSunmi('');
@@ -91,31 +86,22 @@ function DayEntry({ onSave, initialData }) {
   return (
     <form onSubmit={handleSubmit}>
       <h2>📘 {initialData ? 'Izmena dana' : 'Unos novog dana'}</h2>
-
       <label>📅 Datum:</label>
       <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
-
       <label>🧾 Fiskalni račun:</label>
       <input type="text" value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
-
-      <label>💵 Sunmi (gotovina iz aparata):</label>
+      <label>💵 Sunmi:</label>
       <input type="text" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
-
-      <label>🏦 Viza i Fakture (npr. +10 viza):</label>
+      <label>🏦 Viza i Fakture:</label>
       <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
-
-      <label>💸 Rashodi (npr. -100 gorivo):</label>
+      <label>💸 Rashodi:</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
-
-      <label>💰 Keš dobit (npr. +200 mirko):</label>
+      <label>💰 Keš dobit:</label>
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
-
       <label>📦 Početno stanje kase:</label>
       <input type="text" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
-
-      <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
+      <label>✏️ Korekcija kase:</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
-
       <button type="submit">💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}</button>
     </form>
   );
