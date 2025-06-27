@@ -1,134 +1,126 @@
 import React, { useEffect, useState } from "react";
 import { db } from "./firebase";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
 function SummaryView() {
-  const [allEntries, setAllEntries] = useState([]);
+  const [entries, setEntries] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("");
 
   useEffect(() => {
     const fetchEntries = async () => {
-      const querySnapshot = await getDocs(collection(db, "days"));
-      const entries = [];
-      querySnapshot.forEach((doc) => {
-        entries.push({ id: doc.id, ...doc.data() });
-      });
-      setAllEntries(entries);
+      const snapshot = await getDocs(collection(db, "days"));
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setEntries(data);
     };
-
     fetchEntries();
   }, []);
 
-  const getMonthFiltered = () => {
-    if (!selectedMonth) return allEntries;
-    return allEntries.filter((entry) =>
-      entry.date?.startsWith(selectedMonth)
-    );
+  const filterByMonth = () => {
+    if (!selectedMonth) return entries;
+    return entries.filter(entry => entry.date?.startsWith(selectedMonth));
   };
 
-  const getWeekFiltered = () => {
-    if (!selectedWeek) return getMonthFiltered();
-    return getMonthFiltered().filter((entry) => {
+  const filterByWeek = () => {
+    if (!selectedWeek) return filterByMonth();
+    const weekStart = new Date(selectedWeek);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    return filterByMonth().filter(entry => {
       const day = new Date(entry.date);
-      const weekStart = new Date(selectedWeek);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
       return day >= weekStart && day <= weekEnd;
     });
   };
 
-  const printDay = (entry) => {
-    const newWindow = window.open("", "_blank");
-    const content = `
-      <html>
-        <head>
-          <title>Štampa dana</title>
-          <style>
-            body {
-              font-family: sans-serif;
-              padding: 40px;
-              font-size: 18px;
-              line-height: 1.6;
-            }
-            .container {
-              max-width: 800px;
-              margin: auto;
-            }
-            .block {
-              margin-bottom: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="block"><strong>📅 Datum:</strong> ${entry.date}</div>
-            <div class="block"><strong>🧾 Fiskalni:</strong> ${entry.fiskalni}</div>
-            <div class="block"><strong>💵 Sunmi:</strong> ${entry.sunmi}</div>
-            <div class="block"><strong>📊 Pazar:</strong> ${entry.pazar}</div>
-            <div class="block"><strong>📉 Stvarni pazar za uplatu:</strong> ${entry.stvarniPazar}</div>
+  const handleDelete = async (id) => {
+    await deleteDoc(doc(db, "days", id));
+    setEntries(entries.filter(e => e.id !== id));
+  };
 
-            <div class="block"><strong>🏦 Viza i Fakture:</strong><br>${entry.viza?.replace(/\n/g, "<br>") || ""}</div>
-            <div class="block"><strong>📌 Ukupno viza i fakture:</strong> ${entry.ukupnoViza || "0.00"}</div>
+  const printEntry = (entry) => {
+    const popup = window.open('', '_blank');
+    popup.document.write(`<html><head><title>${entry.date}</title></head><body>`);
+    popup.document.write(formatEntry(entry, true));
+    popup.document.write('</body></html>');
+    popup.document.close();
+    popup.print();
+  };
 
-            <div class="block"><strong>🐭 Rashodi:</strong><br>${entry.rashodi?.replace(/\n/g, "<br>") || ""}</div>
-            <div class="block"><strong>📌 Ukupno rashodi:</strong> ${entry.ukupnoRashodi || "0.00"}</div>
+  const formatEntry = (entry, isPrint = false) => {
+    const style = isPrint ? "font-family: sans-serif;" : "";
+    const list = (arr) =>
+      arr?.length
+        ? arr.map(item => `<li>${item}</li>`).join("")
+        : "<li>-</li>";
 
-            <div class="block"><strong>💰 Keš dobit:</strong><br>${entry.kesDobit?.replace(/\n/g, "<br>") || ""}</div>
-            <div class="block"><strong>📌 Ukupno keš dobit:</strong> ${entry.ukupnoKes || "0.00"}</div>
+    return `
+      <div style="${style} padding: 20px; border: 1px solid #ccc; border-radius: 10px; margin-bottom: 20px;">
+        <h2>📆 ${formatDate(entry.date)}</h2>
+        <p>🧾 Fiskalni: ${entry.fiskalni}</p>
+        <p>💵 Sunmi: ${entry.sunmi}</p>
+        <p>📊 Pazar: ${entry.pazar}</p>
+        <p>📉 Stvarni pazar za uplatu: ${entry.stvarniPazar}</p>
 
-            <div class="block"><strong>✏️ Korekcija:</strong> ${entry.korekcija}</div>
-            <div class="block"><strong>📦 Početno stanje:</strong> ${entry.pocetnoStanje}</div>
-            <div class="block"><strong>🧮 Rezultat dana:</strong> ${entry.rezultatDana}</div>
-            <div class="block"><strong>💼 Stanje kase:</strong> ${entry.stanjeKase}</div>
-            <div class="block"><strong>✅ Uplaćen pazar:</strong> ${entry.uplacenPazar}</div>
-          </div>
-        </body>
-      </html>
+        <p>🏦 Viza i fakture (${entry.vizaFaktureTotal || 0}):</p>
+        <ul>${list(entry.vizaFakture)}</ul>
+
+        <p>💸 Rashodi (${entry.rashodiTotal || 0}):</p>
+        <ul>${list(entry.rashodi)}</ul>
+
+        <p>💰 Keš dobit (${entry.kesDobitTotal || 0}):</p>
+        <ul>${list(entry.kesDobit)}</ul>
+
+        <p>🧮 Rezultat dana: ${entry.rezultatDana}</p>
+        <p>📦 Početno stanje kase: ${entry.stanjePrethodno}</p>
+        <p>💼 Stanje kase: ${entry.novoStanje}</p>
+        <p>✅ Uplaćen pazar: ${entry.uplacenPazar}</p>
+        <div style="margin-top: 10px;">
+          <button onclick="window.print()">🖨️ Štampaj</button>
+          <button onclick="window.location.href='/edit/${entry.id}'">✏️ Izmijeni</button>
+          <button onclick="window.confirm('Obrisati?') && window.deleteEntry('${entry.id}')">🗑 Obriši</button>
+        </div>
+      </div>
     `;
-    newWindow.document.write(content);
-    newWindow.document.close();
-    newWindow.focus();
-    newWindow.print();
+  };
+
+  const formatDate = (iso) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}.${m}.${y}`;
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: "20px" }}>
       <h2>📂 Sumarni pregled</h2>
 
-      <label>📅 Izaberi mjesec (npr. 2025-06):</label>
-      <input
-        type="month"
-        value={selectedMonth}
-        onChange={(e) => setSelectedMonth(e.target.value)}
-      />
-
-      <br />
-
-      <label>🗓️ Izaberi početni datum nedjelje:</label>
-      <input
-        type="date"
-        value={selectedWeek}
-        onChange={(e) => setSelectedWeek(e.target.value)}
-      />
+      <div>
+        <label>📅 Izaberi mjesec:</label>{" "}
+        <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+        <br />
+        <label>🗓️ Izaberi početni datum nedjelje:</label>{" "}
+        <input type="date" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
+      </div>
 
       <hr />
 
-      {getWeekFiltered()
+      {filterByWeek()
         .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .map((entry) => (
-          <div
-            key={entry.id}
-            style={{
-              marginBottom: 30,
-              padding: 20,
-              border: "1px solid #ccc",
-              borderRadius: 5,
-              backgroundColor: "#f9f9f9",
-            }}
-          >
-            <h3>📆 {entry.date}</h3>
-            <button onClick={() => printDay(entry)}>🖨️ Štampaj ovaj dan</button>
+        .map(entry => (
+          <div key={entry.id} style={{ padding: 20, border: "1px solid #ccc", borderRadius: 10, marginBottom: 20 }}>
+            <div dangerouslySetInnerHTML={{ __html: formatEntry(entry) }} />
+            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              <button onClick={() => printEntry(entry)}>🖨️ Štampaj</button>
+              <button onClick={() => handleDelete(entry.id)}>🗑 Obriši</button>
+            </div>
           </div>
         ))}
     </div>
