@@ -1,108 +1,89 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { db } from "./firebase";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
 
 function DayEntry() {
-  const [formData, setFormData] = useState({
-    date: "",
-    fiscal: "",
-    sunmi: "",
-    visaInvoices: "",
-    expenses: "",
-    cashIncome: "",
-    cashCorrection: "",
-    initialCash: "",
-  });
+  const [date, setDate] = useState("");
+  const [fiskalni, setFiskalni] = useState("");
+  const [sunmi, setSunmi] = useState("");
+  const [vizaFakture, setVizaFakture] = useState("");
+  const [rashodi, setRashodi] = useState("");
+  const [kesDobit, setKesDobit] = useState("");
+  const [pocetnoStanje, setPocetnoStanje] = useState("");
 
-  const [lastCash, setLastCash] = useState(0);
+  const formatNumber = (val) => parseFloat(val.replace(",", ".") || 0);
 
-  useEffect(() => {
-    const fetchLast = async () => {
-      const snapshot = await getDocs(collection(db, "days"));
-      const docs = snapshot.docs.map(doc => doc.data());
-      const sorted = docs.sort((a, b) => new Date(b.date) - new Date(a.date));
-      if (sorted.length > 0) {
-        setLastCash(Number(sorted[0].finalCash || 0));
-      }
-    };
-    fetchLast();
-  }, []);
-
-  const parseValues = (input, sign = "+") => {
-    return input
-      .split("\n")
-      .map(line => parseFloat(line.replace(",", ".").match(/[-+]?\d+(\.\d+)?/)))
-      .filter(val => !isNaN(val))
-      .map(val => sign === "+" ? val : -val);
+  const sumaPolja = (text) => {
+    if (!text) return 0;
+    const matches = text.match(/[-+]?\d+([.,]\d+)?/g);
+    return matches
+      ? matches.reduce((sum, val) => sum + formatNumber(val), 0)
+      : 0;
   };
 
   const handleSave = async () => {
-    const fiscal = parseFloat(formData.fiscal.replace(",", ".") || 0);
-    const sunmi = parseFloat(formData.sunmi.replace(",", ".") || 0);
-    const visa = parseValues(formData.visaInvoices, "+").reduce((a, b) => a + b, 0);
-    const expenses = parseValues(formData.expenses, "-").reduce((a, b) => a + b, 0);
-    const cashIncome = parseValues(formData.cashIncome, "+").reduce((a, b) => a + b, 0);
-    const correction = parseFloat(formData.cashCorrection.replace(",", ".") || 0);
-    const initCash = parseFloat(formData.initialCash.replace(",", ".") || lastCash || 0);
+    const fisk = formatNumber(fiskalni);
+    const sun = formatNumber(sunmi);
+    const vf = sumaPolja(vizaFakture);
+    const rash = sumaPolja(rashodi);
+    const kes = sumaPolja(kesDobit);
+    const stanje = formatNumber(pocetnoStanje);
 
-    const totalPazar = fiscal + sunmi;
-    const truePazar = fiscal - visa;
-    const dayResult = sunmi + cashIncome + correction + expenses;
-    const finalCash = initCash + dayResult;
-    const paidPazar = fiscal - dayResult;
+    const pazar = fisk + sun;
+    const stvarniPazar = fisk - vf;
+    const rezultatDana = sun + kes - rash;
+    const novoStanje = stanje + rezultatDana;
+    const uplacenPazar = fisk - rezultatDana;
 
-    const newDay = {
-      date: formData.date,
-      fiscal,
+    const entry = {
+      date,
+      fiskalni,
       sunmi,
-      totalPazar: totalPazar.toFixed(2),
-      truePazar: truePazar.toFixed(2),
-      visaInvoices: formData.visaInvoices,
-      expenses: formData.expenses,
-      cashIncome: formData.cashIncome,
-      cashCorrection: correction.toFixed(2),
-      initialCash: initCash.toFixed(2),
-      dayResult: dayResult.toFixed(2),
-      finalCash: finalCash.toFixed(2),
-      paidPazar: paidPazar.toFixed(2),
+      pazar: pazar.toFixed(2),
+      vizaFakture,
+      rashodi,
+      kesDobit,
+      pocetnoStanje,
+      stvarniPazarZaUplatu: stvarniPazar.toFixed(2),
+      rezultatDana: rezultatDana.toFixed(2),
+      novoStanjeKase: novoStanje.toFixed(2),
+      uplacenPazar: uplacenPazar.toFixed(2),
+      timestamp: Timestamp.now(),
     };
 
-    await addDoc(collection(db, "days"), newDay);
-    alert("Dan je sačuvan!");
-  };
-
-  const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    try {
+      await addDoc(collection(db, "days"), entry);
+      alert("Dan sačuvan!");
+    } catch (error) {
+      alert("Greška prilikom čuvanja dana.");
+      console.error(error);
+    }
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: 600 }}>
-      <h2>📅 Unos novog dana</h2>
-
+    <div style={{ padding: 20 }}>
+      <h2>📅 Unos dana</h2>
       <label>Datum:</label>
-      <input name="date" type="date" onChange={handleChange} /><br />
-
+      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <br />
       <label>Fiskalni:</label>
-      <input name="fiscal" onChange={handleChange} /><br />
-
+      <input value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
+      <br />
       <label>Sunmi:</label>
-      <input name="sunmi" onChange={handleChange} /><br />
-
-      <label>Viza i fakture:</label>
-      <textarea name="visaInvoices" onChange={handleChange} /><br />
-
+      <input value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
+      <br />
+      <label>Viza i Fakture:</label>
+      <input value={vizaFakture} onChange={(e) => setVizaFakture(e.target.value)} />
+      <br />
       <label>Rashodi:</label>
-      <textarea name="expenses" onChange={handleChange} /><br />
-
+      <input value={rashodi} onChange={(e) => setRashodi(e.target.value)} />
+      <br />
       <label>Keš dobit:</label>
-      <textarea name="cashIncome" onChange={handleChange} /><br />
-
-      <label>Korekcija:</label>
-      <input name="cashCorrection" onChange={handleChange} /><br />
-
+      <input value={kesDobit} onChange={(e) => setKesDobit(e.target.value)} />
+      <br />
       <label>Početno stanje kase:</label>
-      <input name="initialCash" onChange={handleChange} placeholder={`Prethodno: ${lastCash}`} /><br />
-
+      <input value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
+      <br /><br />
       <button onClick={handleSave}>💾 Sačuvaj dan</button>
     </div>
   );
