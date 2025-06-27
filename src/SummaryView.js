@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { db } from "./firebase"; // obavezno koristi svoj Firebase setup
+import { db } from "./firebase";
 import { collection, getDocs } from "firebase/firestore";
-import "./SummaryView.css"; // opciono, ako želiš stilizaciju
 
 function SummaryView() {
   const [allEntries, setAllEntries] = useState([]);
@@ -17,21 +16,20 @@ function SummaryView() {
       });
       setAllEntries(entries);
     };
-
     fetchEntries();
   }, []);
 
   const getMonthFiltered = () => {
     if (!selectedMonth) return allEntries;
     return allEntries.filter((entry) =>
-      entry.date?.startsWith(selectedMonth)
+      entry.datum?.startsWith(selectedMonth)
     );
   };
 
   const getWeekFiltered = () => {
     if (!selectedWeek) return getMonthFiltered();
     return getMonthFiltered().filter((entry) => {
-      const day = new Date(entry.date);
+      const day = new Date(entry.datum);
       const weekStart = new Date(selectedWeek);
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
@@ -39,18 +37,64 @@ function SummaryView() {
     });
   };
 
+  const format = (n) =>
+    typeof n === "number"
+      ? n.toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : n;
+
   const printDay = (entry) => {
-    const newWindow = window.open();
-    newWindow.document.write(`<pre>${JSON.stringify(entry, null, 2)}</pre>`);
-    newWindow.print();
-    newWindow.close();
+    const html = `
+      <html>
+        <head>
+          <title>Štampanje dana</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 30px; }
+            h2 { margin-bottom: 10px; }
+            p { margin: 5px 0; }
+            pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+          </style>
+        </head>
+        <body>
+          <h2>📆 Datum: ${entry.datum}</h2>
+          <p>🧾 Fiskalni: ${format(entry.fiskalni)} €</p>
+          <p>💵 Sunmi: ${format(entry.sunmi)} €</p>
+          <p>📊 Pazar: ${format(entry.pazar)} €</p>
+          <p>📉 Stvarni pazar za uplatu: ${format(entry.stvarnaUplata)} €</p>
+          <p>🏦 Viza i Fakture:</p>
+          <pre>${entry.virmanText}</pre>
+          <p><strong>Ukupno: ${format(entry.virmani)} €</strong></p>
+          <p>💸 Rashodi:</p>
+          <pre>${entry.rashodiText}</pre>
+          <p><strong>Ukupno: ${format(entry.rashodi)} €</strong></p>
+          <p>💰 Keš dobit:</p>
+          <pre>${entry.kesDobitText}</pre>
+          <p><strong>Ukupno: ${format(entry.kesDobit)} €</strong></p>
+          <p>🧮 Rezultat dana: ${format(entry.rezultat)} €</p>
+          <p>📦 Početno stanje kase: ${format(entry.pocetnoStanje)} €</p>
+          <p>✏️ Korekcija: ${format(entry.korekcija)} €</p>
+          <p>💼 Stanje kase: ${format(entry.stanje)} €</p>
+          <p>✅ Uplaćen pazar: ${format(entry.uplacenPazar)} €</p>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    const newWindow = window.open("", "_blank");
+    newWindow.document.write(html);
+    newWindow.document.close();
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h2>📂 Sumarni pregled</h2>
 
-      <label>📅 Izaberi mjesec (npr. 2025-06):</label>
+      <label>📅 Mjesec:</label>
       <input
         type="month"
         value={selectedMonth}
@@ -58,8 +102,7 @@ function SummaryView() {
       />
 
       <br />
-
-      <label>🗓️ Izaberi početni datum nedjelje:</label>
+      <label>🗓️ Početni dan nedjelje:</label>
       <input
         type="date"
         value={selectedWeek}
@@ -69,12 +112,46 @@ function SummaryView() {
       <hr />
 
       {getWeekFiltered()
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .sort((a, b) => new Date(a.datum) - new Date(b.datum))
         .map((entry) => (
-          <div key={entry.id} style={{ marginBottom: 30, padding: 20, border: "1px solid #ccc", borderRadius: 5 }}>
-            <h3>📆 {entry.date}</h3>
-            <pre>{JSON.stringify(entry, null, 2)}</pre>
-            <button onClick={() => printDay(entry)}>🖨️ Štampaj ovaj dan</button>
+          <div
+            key={entry.id}
+            style={{
+              marginBottom: 30,
+              padding: 20,
+              border: "1px solid #ccc",
+              borderRadius: 8,
+              backgroundColor: "#fefefe",
+            }}
+          >
+            <h3>📆 {entry.datum}</h3>
+            <p>🧾 Fiskalni: {format(entry.fiskalni)} €</p>
+            <p>💵 Sunmi: {format(entry.sunmi)} €</p>
+            <p>📊 Pazar: {format(entry.pazar)} €</p>
+            <p>📉 Stvarni pazar za uplatu: {format(entry.stvarnaUplata)} €</p>
+
+            <p>🏦 Viza i Fakture:<br />
+              <pre>{entry.virmanText}</pre>
+              <strong>Ukupno: {format(entry.virmani)} €</strong>
+            </p>
+
+            <p>💸 Rashodi:<br />
+              <pre>{entry.rashodiText}</pre>
+              <strong>Ukupno: {format(entry.rashodi)} €</strong>
+            </p>
+
+            <p>💰 Keš dobit:<br />
+              <pre>{entry.kesDobitText}</pre>
+              <strong>Ukupno: {format(entry.kesDobit)} €</strong>
+            </p>
+
+            <p>🧮 Rezultat dana: {format(entry.rezultat)} €</p>
+            <p>📦 Početno stanje kase: {format(entry.pocetnoStanje)} €</p>
+            <p>✏️ Korekcija: {format(entry.korekcija)} €</p>
+            <p>💼 Stanje kase: {format(entry.stanje)} €</p>
+            <p>✅ Uplaćen pazar: {format(entry.uplacenPazar)} €</p>
+
+            <button onClick={() => printDay(entry)}>🖨️ Štampaj dan</button>
           </div>
         ))}
     </div>
