@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { db } from "./firebase";
+import { db } from "./firebase"; // obavezno koristi svoj Firebase setup
 import { collection, getDocs } from "firebase/firestore";
-import "./SummaryView.css";
+import "./SummaryView.css"; // opciono, ako želiš stilizaciju
 
 function SummaryView() {
   const [allEntries, setAllEntries] = useState([]);
@@ -40,44 +40,26 @@ function SummaryView() {
   };
 
   const printDay = (entry) => {
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`<pre style="font-size:16px;">${formatEntry(entry)}</pre>`);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
-  const formatEntry = (entry) => {
-    return `
-📆 Datum: ${entry.date?.split("-").reverse().join(".")}
-🧾 Fiskalni: ${entry.fiscal}
-💵 Sunmi: ${entry.sunmi}
-📊 Pazar: ${entry.totalPazar}
-📉 Stvarni pazar za uplatu: ${entry.truePazar}
-
-🏦 Viza i Fakture:\n${entry.visaInvoices}
-💸 Rashodi:\n${entry.expenses}
-💰 Keš dobit:\n${entry.cashIncome}
-
-✏️ Korekcija: ${entry.cashCorrection}
-📦 Početno stanje: ${entry.initialCash}
-📈 Rezultat dana: ${entry.dayResult}
-💼 Stanje kase: ${entry.finalCash}
-✅ Uplaćen pazar: ${entry.paidPazar}
-    `;
+    const newWindow = window.open();
+    newWindow.document.write(`<pre>${JSON.stringify(entry, null, 2)}</pre>`);
+    newWindow.print();
+    newWindow.close();
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h2>📂 Sumarni pregled</h2>
 
-      <label>📅 Mjesec:</label>
+      <label>📅 Izaberi mjesec (npr. 2025-06):</label>
       <input
         type="month"
         value={selectedMonth}
         onChange={(e) => setSelectedMonth(e.target.value)}
       />
 
-      <label>🗓️ Početni datum nedjelje:</label>
+      <br />
+
+      <label>🗓️ Izaberi početni datum nedjelje:</label>
       <input
         type="date"
         value={selectedWeek}
@@ -89,18 +71,10 @@ function SummaryView() {
       {getWeekFiltered()
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .map((entry) => (
-          <div
-            key={entry.id}
-            style={{
-              marginBottom: 30,
-              padding: 20,
-              border: "1px solid #ccc",
-              borderRadius: 5,
-              background: "#f9f9f9"
-            }}
-          >
-            <pre>{formatEntry(entry)}</pre>
-            <button onClick={() => printDay(entry)}>🖨️ Štampaj</button>
+          <div key={entry.id} style={{ marginBottom: 30, padding: 20, border: "1px solid #ccc", borderRadius: 5 }}>
+            <h3>📆 {entry.date}</h3>
+            <pre>{JSON.stringify(entry, null, 2)}</pre>
+            <button onClick={() => printDay(entry)}>🖨️ Štampaj ovaj dan</button>
           </div>
         ))}
     </div>

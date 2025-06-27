@@ -1,91 +1,123 @@
-import React, { useState } from "react";
-import { db } from "./firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import React, { useState, useEffect } from 'react';
 
-function DayEntry() {
-  const [date, setDate] = useState("");
-  const [fiskalni, setFiskalni] = useState("");
-  const [sunmi, setSunmi] = useState("");
-  const [vizaFakture, setVizaFakture] = useState("");
-  const [rashodi, setRashodi] = useState("");
-  const [kesDobit, setKesDobit] = useState("");
-  const [pocetnoStanje, setPocetnoStanje] = useState("");
+function DayEntry({ onSave, initialData }) {
+  const [datum, setDatum] = useState('');
+  const [fiskalni, setFiskalni] = useState('');
+  const [sunmi, setSunmi] = useState('');
+  const [virmanText, setVirmanText] = useState('');
+  const [rashodiText, setRashodiText] = useState('');
+  const [kesDobitText, setKesDobitText] = useState('');
+  const [pocetnoStanje, setPocetnoStanje] = useState('');
+  const [korekcija, setKorekcija] = useState('');
 
-  const formatNumber = (val) => parseFloat(val.replace(",", ".") || 0);
+  useEffect(() => {
+    if (initialData) {
+      setDatum(initialData.datum || '');
+      setFiskalni(initialData.fiskalni?.toString() || '');
+      setSunmi(initialData.sunmi?.toString() || '');
+      setVirmanText(initialData.virmanText || '');
+      setRashodiText(initialData.rashodiText || '');
+      setKesDobitText(initialData.kesDobitText || '');
+      setPocetnoStanje(initialData.pocetnoStanje?.toString() || '');
+      setKorekcija(initialData.korekcija?.toString() || '');
+    }
+  }, [initialData]);
 
-  const sumaPolja = (text) => {
-    if (!text) return 0;
-    const matches = text.match(/[-+]?\d+([.,]\d+)?/g);
-    return matches
-      ? matches.reduce((sum, val) => sum + formatNumber(val), 0)
-      : 0;
+  const parseLines = (text, forcePositive = false) => {
+    return text
+      .split('\n')
+      .map(line => {
+        const cleaned = line.replace(',', '.');
+        const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
+        if (!match) return 0;
+        let value = parseFloat(match[0]);
+        if (forcePositive) value = Math.abs(value);
+        return isNaN(value) ? 0 : value;
+      });
   };
 
-  const handleSave = async () => {
-    const fisk = formatNumber(fiskalni);
-    const sun = formatNumber(sunmi);
-    const vf = sumaPolja(vizaFakture);
-    const rash = sumaPolja(rashodi);
-    const kes = sumaPolja(kesDobit);
-    const stanje = formatNumber(pocetnoStanje);
+  const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
-    const pazar = fisk + sun;
-    const stvarniPazar = fisk - vf;
-    const rezultatDana = sun + kes - rash;
-    const novoStanje = stanje + rezultatDana;
-    const uplacenPazar = fisk - rezultatDana;
+  const handleSubmit = (e) => {
+    e.preventDefault();
 
-    const entry = {
-      date,
-      fiskalni,
-      sunmi,
-      pazar: pazar.toFixed(2),
-      vizaFakture,
+    const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
+    const kesDobit = round(parseLines(kesDobitText).reduce((a, b) => a + b, 0));
+    const virmani = round(parseLines(virmanText).reduce((a, b) => a + b, 0));
+
+    const fisk = parseFloat(fiskalni.replace(',', '.')) || 0;
+    const sun = parseFloat(sunmi.replace(',', '.')) || 0;
+    const korek = parseFloat(korekcija.replace(',', '.')) || 0;
+    const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
+
+    const stvarnaUplata = round(fisk - virmani);
+    const rezultat = round(sun + kesDobit - rashodi); // ✅ Sad ispravno
+    const stanje = round(pocStanje + rezultat + korek);
+    const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
+    const pazar = round(fisk + sun);
+
+    const dan = {
+      datum,
+      fiskalni: fisk,
+      sunmi: sun,
+      virmanText,
+      virmani,
+      rashodiText,
+      kesDobitText,
       rashodi,
       kesDobit,
-      pocetnoStanje,
-      stvarniPazarZaUplatu: stvarniPazar.toFixed(2),
-      rezultatDana: rezultatDana.toFixed(2),
-      novoStanjeKase: novoStanje.toFixed(2),
-      uplacenPazar: uplacenPazar.toFixed(2),
-      timestamp: Timestamp.now(),
+      stvarnaUplata,
+      rezultat,
+      uplacenPazar,
+      pazar,
+      pocetnoStanje: pocStanje,
+      korekcija: korek,
+      stanje,
     };
 
-    try {
-      await addDoc(collection(db, "days"), entry);
-      alert("Dan sačuvan!");
-    } catch (error) {
-      alert("Greška prilikom čuvanja dana.");
-      console.error(error);
-    }
+    onSave(dan);
+
+    // Reset
+    setDatum('');
+    setFiskalni('');
+    setSunmi('');
+    setVirmanText('');
+    setRashodiText('');
+    setKesDobitText('');
+    setPocetnoStanje('');
+    setKorekcija('');
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>📅 Unos dana</h2>
-      <label>Datum:</label>
-      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      <br />
-      <label>Fiskalni:</label>
-      <input value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
-      <br />
-      <label>Sunmi:</label>
-      <input value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
-      <br />
-      <label>Viza i Fakture:</label>
-      <input value={vizaFakture} onChange={(e) => setVizaFakture(e.target.value)} />
-      <br />
-      <label>Rashodi:</label>
-      <input value={rashodi} onChange={(e) => setRashodi(e.target.value)} />
-      <br />
-      <label>Keš dobit:</label>
-      <input value={kesDobit} onChange={(e) => setKesDobit(e.target.value)} />
-      <br />
-      <label>Početno stanje kase:</label>
-      <input value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
-      <br /><br />
-      <button onClick={handleSave}>💾 Sačuvaj dan</button>
-    </div>
+    <form onSubmit={handleSubmit}>
+      <h2>📘 {initialData ? 'Izmena dana' : 'Unos novog dana'}</h2>
+
+      <label>📅 Datum:</label>
+      <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
+
+      <label>🧾 Fiskalni račun:</label>
+      <input type="text" value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
+
+      <label>💵 Sunmi (gotovina iz aparata):</label>
+      <input type="text" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
+
+      <label>🏦 Viza i Fakture (npr. +10 viza):</label>
+      <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
+
+      <label>💸 Rashodi (npr. -100 gorivo):</label>
+      <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
+
+      <label>💰 Keš dobit (npr. +200 mirko):</label>
+      <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
+
+      <label>📦 Početno stanje kase:</label>
+      <input type="text" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
+
+      <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
+      <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
+
+      <button type="submit">💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}</button>
+    </form>
   );
 }
 
