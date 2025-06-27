@@ -39,41 +39,31 @@ function SummaryView() {
     });
   };
 
-  const printFormattedDay = (entry) => {
-    const newWindow = window.open();
-    newWindow.document.write(`
-      <html>
-        <head>
-          <title>Štampa – ${entry.date}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 20px;
-              white-space: pre-wrap;
-            }
-            h2 { text-align: center; }
-            .block { margin-bottom: 15px; }
-          </style>
-        </head>
-        <body>
-          <h2>📆 Dan: ${entry.date}</h2>
-          <div class="block">🧾 Fiskalni: ${entry.fiskalni}</div>
-          <div class="block">💵 Sunmi: ${entry.sunmi}</div>
-          <div class="block">📊 Pazar: ${entry.pazar}</div>
-          <div class="block">📉 Stvarni pazar za uplatu: ${entry.stvarniPazar}</div>
-          <div class="block">🏦 Viza i Fakture:\n${entry.vizaFakture}</div>
-          <div class="block">💸 Rashodi:\n${entry.rashodi}</div>
-          <div class="block">💰 Keš dobit:\n${entry.kesDobit}</div>
-          <div class="block">🧮 Rezultat dana: ${entry.rezultatDana}</div>
-          <div class="block">📦 Početno stanje: ${entry.pocetnoStanje}</div>
-          <div class="block">✏️ Korekcija: ${entry.korekcija}</div>
-          <div class="block">💼 Stanje kase: ${entry.stanjeKase}</div>
-          <div class="block">✅ Uplaćen pazar: ${entry.uplacenPazar}</div>
-        </body>
-      </html>
-    `);
-    newWindow.print();
-    newWindow.close();
+  const printDay = (entry) => {
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`<pre style="font-size:16px;">${formatEntry(entry)}</pre>`);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const formatEntry = (entry) => {
+    return `
+📆 Datum: ${entry.date?.split("-").reverse().join(".")}
+🧾 Fiskalni: ${entry.fiscal}
+💵 Sunmi: ${entry.sunmi}
+📊 Pazar: ${entry.totalPazar}
+📉 Stvarni pazar za uplatu: ${entry.truePazar}
+
+🏦 Viza i Fakture:\n${entry.visaInvoices}
+💸 Rashodi:\n${entry.expenses}
+💰 Keš dobit:\n${entry.cashIncome}
+
+✏️ Korekcija: ${entry.cashCorrection}
+📦 Početno stanje: ${entry.initialCash}
+📈 Rezultat dana: ${entry.dayResult}
+💼 Stanje kase: ${entry.finalCash}
+✅ Uplaćen pazar: ${entry.paidPazar}
+    `;
   };
 
   return (
@@ -87,8 +77,6 @@ function SummaryView() {
         onChange={(e) => setSelectedMonth(e.target.value)}
       />
 
-      <br /><br />
-
       <label>🗓️ Početni datum nedjelje:</label>
       <input
         type="date"
@@ -101,29 +89,18 @@ function SummaryView() {
       {getWeekFiltered()
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .map((entry) => (
-          <div key={entry.id} style={{
-            marginBottom: 30,
-            padding: 20,
-            border: "1px solid #ccc",
-            borderRadius: 5,
-            background: "#fafafa"
-          }}>
-            <h3>📆 {entry.date}</h3>
-            <div><b>Fiskalni:</b> {entry.fiskalni}</div>
-            <div><b>Sunmi:</b> {entry.sunmi}</div>
-            <div><b>Pazar:</b> {entry.pazar}</div>
-            <div><b>Stvarni pazar za uplatu:</b> {entry.stvarniPazar}</div>
-            <div><b>Viza i Fakture:</b> <pre>{entry.vizaFakture}</pre></div>
-            <div><b>Rashodi:</b> <pre>{entry.rashodi}</pre></div>
-            <div><b>Keš dobit:</b> <pre>{entry.kesDobit}</pre></div>
-            <div><b>Rezultat dana:</b> {entry.rezultatDana}</div>
-            <div><b>Početno stanje:</b> {entry.pocetnoStanje}</div>
-            <div><b>Korekcija:</b> {entry.korekcija}</div>
-            <div><b>Stanje kase:</b> {entry.stanjeKase}</div>
-            <div><b>Uplaćen pazar:</b> {entry.uplacenPazar}</div>
-
-            <br />
-            <button onClick={() => printFormattedDay(entry)}>🖨️ Štampaj ovaj dan</button>
+          <div
+            key={entry.id}
+            style={{
+              marginBottom: 30,
+              padding: 20,
+              border: "1px solid #ccc",
+              borderRadius: 5,
+              background: "#f9f9f9"
+            }}
+          >
+            <pre>{formatEntry(entry)}</pre>
+            <button onClick={() => printDay(entry)}>🖨️ Štampaj</button>
           </div>
         ))}
     </div>
