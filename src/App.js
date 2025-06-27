@@ -1,29 +1,28 @@
-// App.js
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import DayEntry from "./DayEntry";
-import SummaryView from "./SummaryView"; // Dodaj ovo!
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import DayEntry from "./DayEntry";          // Glavna komponenta za unos dana
+import SummaryView from "./SummaryView";    // Nova komponenta za sumarno
 
 function App() {
-  const [editData, setEditData] = useState(null);
-
-  const handleSave = (newData) => {
-    setEditData(null); // Resetuj formu
-  };
-
   return (
     <Router>
-      <div className="App" style={{ padding: 20 }}>
+      <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
+        <h1>📘 BBL Billing App</h1>
+
+        {/* Navigaciona dugmad */}
+        <div style={{ marginBottom: "20px" }}>
+          <Link to="/">
+            <button style={{ marginRight: "10px" }}>📝 Unos dana</button>
+          </Link>
+          <Link to="/summary">
+            <button>📂 Sumarni pregled</button>
+          </Link>
+        </div>
+
+        {/* Rute */}
         <Routes>
-          <Route
-            path="/"
-            element={<DayEntry onSave={handleSave} initialData={editData} />}
-          />
-          />
-          <Route
-            path="/summary"
-            element={<SummaryView />} // 👈 Ovo dodaješ ovdje!
-          />
+          <Route path="/" element={<DayEntry />} />
+          <Route path="/summary" element={<SummaryView />} />
         </Routes>
       </div>
     </Router>
