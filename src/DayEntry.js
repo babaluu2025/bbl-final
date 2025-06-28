@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db } from './firebase';
-import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 
-function DayEntry({ initialData, onSave }) {
+function DayEntry({ onSave, initialData }) {
   const [datum, setDatum] = useState('');
   const [fiskalni, setFiskalni] = useState('');
   const [sunmi, setSunmi] = useState('');
@@ -40,7 +38,7 @@ function DayEntry({ initialData, onSave }) {
 
   const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
@@ -53,7 +51,7 @@ function DayEntry({ initialData, onSave }) {
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
     const stvarnaUplata = round(fisk - virmani);
-    const rezultat = round(sun + kesDobit - rashodi);
+    const rezultat = round(sun + kesDobit - rashodi); // ✅ Sad ispravno
     const stanje = round(pocStanje + rezultat + korek);
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
@@ -77,37 +75,22 @@ function DayEntry({ initialData, onSave }) {
       stanje,
     };
 
-    try {
-      if (initialData?.id) {
-        const ref = doc(db, 'days', initialData.id);
-        await updateDoc(ref, dan);
-      } else {
-        await addDoc(collection(db, 'days'), dan);
-      }
+    onSave(dan);
 
-      if (onSave) onSave();
-      alert('✅ Dan sačuvan!');
-    } catch (error) {
-      console.error('Greška prilikom čuvanja:', error);
-      alert('❌ Greška prilikom čuvanja.');
-    }
-
-    // Reset forma (samo ako nije edit)
-    if (!initialData) {
-      setDatum('');
-      setFiskalni('');
-      setSunmi('');
-      setVirmanText('');
-      setRashodiText('');
-      setKesDobitText('');
-      setPocetnoStanje('');
-      setKorekcija('');
-    }
+    // Reset
+    setDatum('');
+    setFiskalni('');
+    setSunmi('');
+    setVirmanText('');
+    setRashodiText('');
+    setKesDobitText('');
+    setPocetnoStanje('');
+    setKorekcija('');
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>{initialData ? '✏️ Izmena dana' : '📘 Unos novog dana'}</h2>
+      <h2>📘 {initialData ? 'Izmena dana' : 'Unos novog dana'}</h2>
 
       <label>📅 Datum:</label>
       <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
@@ -115,25 +98,25 @@ function DayEntry({ initialData, onSave }) {
       <label>🧾 Fiskalni račun:</label>
       <input type="text" value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
 
-      <label>💵 Sunmi:</label>
+      <label>💵 Sunmi (gotovina iz aparata):</label>
       <input type="text" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
 
-      <label>🏦 Viza i fakture:</label>
+      <label>🏦 Viza i Fakture (npr. +10 viza):</label>
       <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
 
-      <label>💸 Rashodi:</label>
+      <label>💸 Rashodi (npr. -100 gorivo):</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
 
-      <label>💰 Keš dobit:</label>
+      <label>💰 Keš dobit (npr. +200 mirko):</label>
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
       <label>📦 Početno stanje kase:</label>
       <input type="text" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
 
-      <label>✏️ Korekcija kase:</label>
+      <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
-      <button type="submit">💾 Sačuvaj dan</button>
+      <button type="submit">💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}</button>
     </form>
   );
 }
