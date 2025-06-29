@@ -45,6 +45,15 @@ function SummaryView() {
         })
       : n;
 
+  const formatDatum = (d) => {
+    const date = new Date(d);
+    return date.toLocaleDateString('sr-Latn-ME', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
   const printDay = (entry) => {
     const html = `
       <html>
@@ -58,7 +67,7 @@ function SummaryView() {
           </style>
         </head>
         <body>
-          <h2>📆 Datum: ${entry.datum}</h2>
+          <h2>📆 Datum: ${formatDatum(entry.datum)}</h2>
           <p>🧾 Fiskalni: ${format(entry.fiskalni)} €</p>
           <p>💵 Sunmi: ${format(entry.sunmi)} €</p>
           <p>📊 Pazar: ${format(entry.pazar)} €</p>
@@ -77,11 +86,7 @@ function SummaryView() {
           <p>✏️ Korekcija: ${format(entry.korekcija)} €</p>
           <p>💼 Stanje kase: ${format(entry.stanje)} €</p>
           <p>✅ Uplaćen pazar: ${format(entry.uplacenPazar)} €</p>
-          <script>
-            window.onload = function() {
-              window.print();
-            };
-          </script>
+          <script>window.onload = function() { window.print(); };</script>
         </body>
       </html>
     `;
@@ -124,7 +129,7 @@ function SummaryView() {
               backgroundColor: "#fefefe",
             }}
           >
-            <h3>📆 {entry.datum}</h3>
+            <h3>📆 {formatDatum(entry.datum)}</h3>
             <p>🧾 Fiskalni: {format(entry.fiskalni)} €</p>
             <p>💵 Sunmi: {format(entry.sunmi)} €</p>
             <p>📊 Pazar: {format(entry.pazar)} €</p>
