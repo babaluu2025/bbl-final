@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import OcrUpload from './OcrUpload'; // 📷 OCR komponenta
 
 function DayEntry({ onSave, initialData }) {
   const [datum, setDatum] = useState('');
@@ -51,7 +52,7 @@ function DayEntry({ onSave, initialData }) {
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
     const stvarnaUplata = round(fisk - virmani);
-    const rezultat = round(sun + kesDobit - rashodi); // ✅ Sad ispravno
+    const rezultat = round(sun + kesDobit - rashodi);
     const stanje = round(pocStanje + rezultat + korek);
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
@@ -91,6 +92,17 @@ function DayEntry({ onSave, initialData }) {
   return (
     <form onSubmit={handleSubmit}>
       <h2>📘 {initialData ? 'Izmena dana' : 'Unos novog dana'}</h2>
+
+      <OcrUpload
+        onExtract={(data) => {
+          if (data.datum) setDatum(data.datum);
+          if (data.fiskalni) setFiskalni(data.fiskalni);
+          if (data.sunmi) setSunmi(data.sunmi);
+          if (data.virmanText) setVirmanText(data.virmanText);
+          if (data.rashodiText) setRashodiText(data.rashodiText);
+          if (data.kesDobitText) setKesDobitText(data.kesDobitText);
+        }}
+      />
 
       <label>📅 Datum:</label>
       <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
