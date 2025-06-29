@@ -89,20 +89,18 @@ function DayEntry({ onSave, initialData }) {
     setKorekcija('');
   };
 
+  const formatDatum = (d) => {
+    const date = new Date(d);
+    return date.toLocaleDateString('sr-Latn-ME', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
   return (
     <form onSubmit={handleSubmit}>
-      <h2>📘 {initialData ? 'Izmena dana' : 'Unos novog dana'}</h2>
-
-      <OcrUpload
-        onExtract={(data) => {
-          if (data.datum) setDatum(data.datum);
-          if (data.fiskalni) setFiskalni(data.fiskalni);
-          if (data.sunmi) setSunmi(data.sunmi);
-          if (data.virmanText) setVirmanText(data.virmanText);
-          if (data.rashodiText) setRashodiText(data.rashodiText);
-          if (data.kesDobitText) setKesDobitText(data.kesDobitText);
-        }}
-      />
+      <h2>📘 {initialData ? `Izmena dana: ${formatDatum(initialData.datum)}` : 'Unos novog dana'}</h2>
 
       <label>📅 Datum:</label>
       <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
@@ -128,7 +126,7 @@ function DayEntry({ onSave, initialData }) {
       <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
-      <button type="submit">💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}</button>
+      <button type="submit">💾 {initialData ? 'Sačuvaj izmjene' : 'Sačuvaj dan'}</button>
     </form>
   );
 }
