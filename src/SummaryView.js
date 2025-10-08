@@ -1,23 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { db } from "./firebase";
-import { collection, getDocs } from "firebase/firestore";
 
-function SummaryView() {
+function SummaryView({ days }) {
   const [allEntries, setAllEntries] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("");
 
   useEffect(() => {
-    const fetchEntries = async () => {
-      const querySnapshot = await getDocs(collection(db, "days"));
-      const entries = [];
-      querySnapshot.forEach((doc) => {
-        entries.push({ id: doc.id, ...doc.data() });
-      });
-      setAllEntries(entries);
-    };
-    fetchEntries();
-  }, []);
+    setAllEntries(days);
+  }, [days]);
 
   const getMonthFiltered = () => {
     if (!selectedMonth) return allEntries;
@@ -93,6 +83,7 @@ function SummaryView() {
   return (
     <div style={{ padding: 20 }}>
       <h2>📂 Sumarni pregled</h2>
+      <p>Ukupno unosa: {allEntries.length}</p>
 
       <label>📅 Mjesec:</label>
       <input
@@ -111,51 +102,56 @@ function SummaryView() {
 
       <hr />
 
-      {getWeekFiltered()
-        .sort((a, b) => new Date(a.datum) - new Date(b.datum))
-        .map((entry) => (
-          <div
-            key={entry.id}
-            style={{
-              marginBottom: 30,
-              padding: 20,
-              border: "1px solid #ccc",
-              borderRadius: 8,
-              backgroundColor: "#fefefe",
-            }}
-          >
-            <h3>📆 {entry.datum}</h3>
-            <p>🧾 Fiskalni: {format(entry.fiskalni)} €</p>
-            <p>💵 Sunmi: {format(entry.sunmi)} €</p>
-            <p>📊 Pazar: {format(entry.pazar)} €</p>
-            <p>📉 Stvarni pazar za uplatu: {format(entry.stvarnaUplata)} €</p>
+      {getWeekFiltered().length === 0 ? (
+        <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+          {allEntries.length === 0 ? 'Nema unesenih dana' : 'Nema podataka za izabrani filter'}
+        </p>
+      ) : (
+        getWeekFiltered()
+          .sort((a, b) => new Date(a.datum) - new Date(b.datum))
+          .map((entry) => (
+            <div
+              key={entry.id}
+              style={{
+                marginBottom: 30,
+                padding: 20,
+                border: "1px solid #ccc",
+                borderRadius: 8,
+                backgroundColor: "#fefefe",
+              }}
+            >
+              <h3>📆 {entry.datum}</h3>
+              <p>🧾 Fiskalni: {format(entry.fiskalni)} €</p>
+              <p>💵 Sunmi: {format(entry.sunmi)} €</p>
+              <p>📊 Pazar: {format(entry.pazar)} €</p>
+              <p>📉 Stvarni pazar za uplatu: {format(entry.stvarnaUplata)} €</p>
 
-            <p>🏦 Viza i Fakture:<br />
-              <pre>{entry.virmanText}</pre>
-              <strong>Ukupno: {format(entry.virmani)} €</strong>
-            </p>
+              <p>🏦 Viza i Fakture:<br />
+                <pre>{entry.virmanText}</pre>
+                <strong>Ukupno: {format(entry.virmani)} €</strong>
+              </p>
 
-            <p>💸 Rashodi:<br />
-              <pre>{entry.rashodiText}</pre>
-              <strong>Ukupno: {format(entry.rashodi)} €</strong>
-            </p>
+              <p>💸 Rashodi:<br />
+                <pre>{entry.rashodiText}</pre>
+                <strong>Ukupno: {format(entry.rashodi)} €</strong>
+              </p>
 
-            <p>💰 Keš dobit:<br />
-              <pre>{entry.kesDobitText}</pre>
-              <strong>Ukupno: {format(entry.kesDobit)} €</strong>
-            </p>
+              <p>💰 Keš dobit:<br />
+                <pre>{entry.kesDobitText}</pre>
+                <strong>Ukupno: {format(entry.kesDobit)} €</strong>
+              </p>
 
-            <p>🧮 Rezultat dana: {format(entry.rezultat)} €</p>
-            <p>📦 Početno stanje kase: {format(entry.pocetnoStanje)} €</p>
-            <p>✏️ Korekcija: {format(entry.korekcija)} €</p>
-            <p>💼 Stanje kase: {format(entry.stanje)} €</p>
-            <p>✅ Uplaćen pazar: {format(entry.uplacenPazar)} €</p>
+              <p>🧮 Rezultat dana: {format(entry.rezultat)} €</p>
+              <p>📦 Početno stanje kase: {format(entry.pocetnoStanje)} €</p>
+              <p>✏️ Korekcija: {format(entry.korekcija)} €</p>
+              <p>💼 Stanje kase: {format(entry.stanje)} €</p>
+              <p>✅ Uplaćen pazar: {format(entry.uplacenPazar)} €</p>
 
-            <button onClick={() => printDay(entry)}>🖨️ Štampaj dan</button>
-          </div>
-        ))}
+              <button onClick={() => printDay(entry)}>🖨️ Štampaj dan</button>
+            </div>
+          ))
+      )}
     </div>
   );
 }
-
 export default SummaryView;
