@@ -1,5 +1,4 @@
 // src/googleDrive.js
-// ZAMENI SA TVOJIM NOVIM CLIENT_ID IZ GOOGLE CLOUD KONZOLE
 const CLIENT_ID = "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
 
 let accessToken = localStorage.getItem('google_access_token') || null;
@@ -16,9 +15,10 @@ function checkTokenExpiry() {
   }
 }
 
-// IDENTIČNO KAO U PRVOM INDEX.html
+// KORISTIMO DINAMIČKI REDIRECT URI - OVO JE KLJUČNO!
 export function handleAuthClick() {
   const redirectUri = window.location.origin;
+  console.log('Redirect URI:', redirectUri); // Za debug
   
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${CLIENT_ID}&` +
@@ -32,6 +32,7 @@ export function handleAuthClick() {
   window.location.href = authUrl;
 }
 
+// OSTALE FUNKCIJE OSTAJU ISTE...
 export function checkRedirectAuth() {
   const hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
@@ -177,44 +178,32 @@ export function manualBackup(daysData) {
 
   const jsonStr = JSON.stringify(allData, null, 2);
   
-  // IDENTIČAN MANUAL BACKUP KAO U PRVOM HTML
   const choice = confirm("📋 RUČNI BACKUP\n\nOK: Kopiraj podatke (spasi u .txt fajl)\nOtkaži: Učitaj podatke (nalepi iz .txt fajla)");
   
   if (choice) {
-    copyToClipboard(jsonStr).then(() => {
-      alert("✅ PODACI KOPIRANI!\n\nSada:\n1. Otvori Notepad/Text Editor\n2. Nalepi (Ctrl+V) podatke\n3. Sačuvaj kao 'bbl_backup.txt'\n\nOvo je tvoj ručni backup!");
-    }).catch(() => {
-      const textArea = document.createElement('textarea');
-      textArea.value = jsonStr;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-          alert("✅ PODACI KOPIRANI!\n\nSada:\n1. Otvori Notepad/Text Editor\n2. Nalepi (Ctrl+V) podatke\n3. Sačuvaj kao 'bbl_backup.txt'");
-        } else {
-          showTextAreaFallback(jsonStr);
-        }
-      } catch (err) {
+    // Kopiranje u clipboard
+    const textArea = document.createElement('textarea');
+    textArea.value = jsonStr;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        alert("✅ PODACI KOPIRANI!\n\nSada:\n1. Otvori Notepad/Text Editor\n2. Nalepi (Ctrl+V) podatke\n3. Sačuvaj kao 'bbl_backup.txt'");
+      } else {
         showTextAreaFallback(jsonStr);
       }
-      document.body.removeChild(textArea);
-    });
+    } catch (err) {
+      showTextAreaFallback(jsonStr);
+    }
+    document.body.removeChild(textArea);
   } else {
     showImportDialog();
-  }
-}
-
-function copyToClipboard(text) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    return navigator.clipboard.writeText(text);
-  } else {
-    return Promise.reject('Clipboard API not supported');
   }
 }
 
@@ -392,14 +381,6 @@ function showImportDialog() {
   cancelBtn.onclick = () => {
     document.body.removeChild(container);
   };
-  
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      document.body.removeChild(container);
-      document.removeEventListener('keydown', escHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
 }
 
 export function showSyncStatus(message, type = 'info') {
