@@ -1,13 +1,9 @@
 // src/googleDrive.js
-const CLIENT_ID = "778110423475-mo7qh57tcbfsnqlcojr1eu24e9obec5f.apps.googleusercontent.com";
-
-// KORISTIMO PRAVI REDIRECT URI KOJI JE U GOOGLE CLOUD KONZOLI
-const REDIRECT_URI = "https://your-app-domain.com"; // ZAMENI SA TVOJIM PRAVIM DOMENOM
+const CLIENT_ID = "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
 
 let accessToken = localStorage.getItem('google_access_token') || null;
 let userEmail = localStorage.getItem('google_user_email') || null;
 
-// Provera isteka tokena
 function checkTokenExpiry() {
   const tokenExpiry = localStorage.getItem('google_token_expiry');
   if (tokenExpiry && Date.now() > parseInt(tokenExpiry)) {
@@ -19,12 +15,14 @@ function checkTokenExpiry() {
   }
 }
 
-// Google OAuth login
-export function handleGoogleLogin() {
-  // Koristi pravi redirect URI
+// KORISTIMO DINAMIČKI REDIRECT URI - OVO JE KLJUČNO!
+export function handleAuthClick() {
+  const redirectUri = window.location.origin;
+  console.log('Redirect URI:', redirectUri); // Za debug
+  
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${CLIENT_ID}&` +
-    `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `response_type=token&` +
     `scope=https://www.googleapis.com/auth/drive.file&` +
     `include_granted_scopes=true&` +
@@ -46,7 +44,6 @@ export function checkRedirectAuth() {
       localStorage.setItem('google_access_token', accessToken);
       localStorage.setItem('google_token_expiry', Date.now() + (expiresIn * 1000));
       
-      // Očisti URL
       window.history.replaceState({}, document.title, window.location.pathname);
       
       return true;
@@ -55,10 +52,7 @@ export function checkRedirectAuth() {
   return false;
 }
 
-// OSTALE FUNKCIJE OSTAJU NE PROMENJENE...
 export async function getUserInfo() {
-  if (!accessToken) throw new Error("Niste prijavljeni");
-  
   try {
     const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
       headers: {
@@ -83,7 +77,7 @@ export async function getUserInfo() {
 export async function saveToDrive(daysData) {
   checkTokenExpiry();
   if (!accessToken) {
-    throw new Error("Niste prijavljeni na Google Drive");
+    throw new Error("Niste prijavljeni");
   }
 
   const allData = {
@@ -142,7 +136,7 @@ export async function saveToDrive(daysData) {
 export async function loadFromDrive() {
   checkTokenExpiry();
   if (!accessToken) {
-    throw new Error("Niste prijavljeni na Google Drive");
+    throw new Error("Niste prijavljeni");
   }
 
   try {
@@ -184,8 +178,38 @@ export function manualBackup(daysData) {
 
   const jsonStr = JSON.stringify(allData, null, 2);
   
+  const choice = confirm("📋 RUČNI BACKUP\n\nOK: Kopiraj podatke (spasi u .txt fajl)\nOtkaži: Učitaj podatke (nalepi iz .txt fajla)");
+  
+  if (choice) {
+    // Kopiranje u clipboard
+    const textArea = document.createElement('textarea');
+    textArea.value = jsonStr;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        alert("✅ PODACI KOPIRANI!\n\nSada:\n1. Otvori Notepad/Text Editor\n2. Nalepi (Ctrl+V) podatke\n3. Sačuvaj kao 'bbl_backup.txt'");
+      } else {
+        showTextAreaFallback(jsonStr);
+      }
+    } catch (err) {
+      showTextAreaFallback(jsonStr);
+    }
+    document.body.removeChild(textArea);
+  } else {
+    showImportDialog();
+  }
+}
+
+function showTextAreaFallback(text) {
   const textArea = document.createElement('textarea');
-  textArea.value = jsonStr;
+  textArea.value = text;
   textArea.style.width = '100%';
   textArea.style.height = '300px';
   textArea.style.margin = '10px 0';
@@ -238,6 +262,125 @@ export function manualBackup(daysData) {
   document.body.appendChild(container);
   
   textArea.select();
+}
+
+function showImportDialog() {
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '50%';
+  container.style.left = '50%';
+  container.style.transform = 'translate(-50%, -50%)';
+  container.style.background = 'white';
+  container.style.padding = '20px';
+  container.style.borderRadius = '12px';
+  container.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+  container.style.zIndex = '10000';
+  container.style.width = '90%';
+  container.style.maxWidth = '500px';
+  
+  const title = document.createElement('div');
+  title.textContent = '📥 UCITAJTE BACKUP PODATKE';
+  title.style.fontWeight = 'bold';
+  title.style.marginBottom = '15px';
+  title.style.color = '#2563eb';
+  title.style.fontSize = '18px';
+  title.style.textAlign = 'center';
+  
+  const instruction = document.createElement('div');
+  instruction.innerHTML = 'Nalepite JSON podatke iz vašeg backup .txt fajla:<br><small>(Ovo će <b>ZAMENITI</b> sve trenutne podatke)</small>';
+  instruction.style.marginBottom = '15px';
+  instruction.style.textAlign = 'center';
+  instruction.style.color = '#666';
+  
+  const textArea = document.createElement('textarea');
+  textArea.style.width = '100%';
+  textArea.style.height = '200px';
+  textArea.style.padding = '10px';
+  textArea.style.border = '2px solid #2563eb';
+  textArea.style.borderRadius = '8px';
+  textArea.style.fontFamily = 'monospace';
+  textArea.style.fontSize = '12px';
+  textArea.placeholder = 'Nalepite JSON podatke ovde...';
+  
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.gap = '10px';
+  buttonContainer.style.marginTop = '15px';
+  buttonContainer.style.justifyContent = 'center';
+  
+  const importBtn = document.createElement('button');
+  importBtn.textContent = '✅ Uvezi Podatke';
+  importBtn.style.background = '#10B981';
+  importBtn.style.color = 'white';
+  importBtn.style.border = 'none';
+  importBtn.style.padding = '12px 20px';
+  importBtn.style.borderRadius = '8px';
+  importBtn.style.cursor = 'pointer';
+  importBtn.style.flex = '1';
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '❌ Otkaži';
+  cancelBtn.style.background = '#EF4444';
+  cancelBtn.style.color = 'white';
+  cancelBtn.style.border = 'none';
+  cancelBtn.style.padding = '12px 20px';
+  cancelBtn.style.borderRadius = '8px';
+  cancelBtn.style.cursor = 'pointer';
+  cancelBtn.style.flex = '1';
+  
+  const statusDiv = document.createElement('div');
+  statusDiv.style.marginTop = '10px';
+  statusDiv.style.textAlign = 'center';
+  statusDiv.style.minHeight = '20px';
+  statusDiv.style.fontSize = '14px';
+  
+  container.appendChild(title);
+  container.appendChild(instruction);
+  container.appendChild(textArea);
+  container.appendChild(buttonContainer);
+  container.appendChild(statusDiv);
+  buttonContainer.appendChild(importBtn);
+  buttonContainer.appendChild(cancelBtn);
+  document.body.appendChild(container);
+  
+  textArea.focus();
+  
+  importBtn.onclick = () => {
+    const imported = textArea.value.trim();
+    if (!imported) {
+      statusDiv.textContent = '❌ Niste uneli podatke!';
+      statusDiv.style.color = '#EF4444';
+      return;
+    }
+    
+    try {
+      const data = JSON.parse(imported);
+      
+      if (!data.days) {
+        throw new Error('Nevažeći format podataka');
+      }
+      
+      localStorage.setItem('bbl_days', JSON.stringify(data.days));
+      
+      statusDiv.textContent = `✅ Backup uspešno uvezen!`;
+      statusDiv.style.color = '#10B981';
+      
+      setTimeout(() => {
+        document.body.removeChild(container);
+        alert(`✅ Backup uspešno uvezen!\n\nAplikacija će se sada restartovati da prikaže nove podatke.`);
+        window.location.reload();
+      }, 2000);
+      
+    } catch (err) {
+      statusDiv.textContent = '❌ Greška: ' + err.message;
+      statusDiv.style.color = '#EF4444';
+      console.error('Greška pri uvoženju:', err);
+    }
+  };
+  
+  cancelBtn.onclick = () => {
+    document.body.removeChild(container);
+  };
 }
 
 export function showSyncStatus(message, type = 'info') {
