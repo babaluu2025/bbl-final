@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import DayEntry from "./DayEntry";
 import SummaryView from "./SummaryView";
 import { 
-  handleGoogleLogin, 
+  handleAuthClick, 
   checkRedirectAuth, 
   getUserInfo, 
   saveToDrive, 
@@ -19,6 +19,14 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Učitaj lokalne podatke pri startu
+  useEffect(() => {
+    const localDays = localStorage.getItem('bbl_days');
+    if (localDays) {
+      setDays(JSON.parse(localDays));
+    }
+  }, []);
 
   // Provera autentifikacije pri učitavanju
   useEffect(() => {
@@ -56,10 +64,14 @@ function App() {
       const driveData = await loadFromDrive();
       if (driveData) {
         setDays(driveData);
-        showSyncStatus("✅ Podaci uspešno učitani", "success");
+        localStorage.setItem('bbl_days', JSON.stringify(driveData));
+        showSyncStatus("✅ Podaci uspešno učitani sa Drive-a", "success");
+      } else {
+        showSyncStatus("ℹ️ Nema podataka na Drive-u", "info");
       }
     } catch (error) {
       console.error("Greška pri učitavanju podataka:", error);
+      showSyncStatus("❌ Greška pri učitavanju sa Drive-a", "error");
     } finally {
       setLoading(false);
     }
@@ -67,29 +79,31 @@ function App() {
 
   // Čuvanje novog dana
   const handleSave = async (dan) => {
-    const newDays = [...days, { ...dan, id: Date.now().toString() }];
+    const newDay = { 
+      ...dan, 
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    const newDays = [...days, newDay];
     setDays(newDays);
+    localStorage.setItem('bbl_days', JSON.stringify(newDays));
     
     try {
       if (isLoggedIn) {
         await saveToDrive(newDays);
-        showSyncStatus("✅ Dan sačuvan i sinhronizovan", "success");
+        showSyncStatus("✅ Dan sačuvan i sinhronizovan na Drive", "success");
       } else {
-        // Lokalno čuvanje ako nije prijavljen
-        localStorage.setItem('bbl_days', JSON.stringify(newDays));
         showSyncStatus("✅ Dan sačuvan lokalno", "info");
       }
     } catch (error) {
-      console.error("Greška pri čuvanju:", error);
-      // Fallback na lokalno čuvanje
-      localStorage.setItem('bbl_days', JSON.stringify(newDays));
+      console.error("Greška pri čuvanju na Drive:", error);
       showSyncStatus("⚠️ Dan sačuvan lokalno (greška pri sinhronizaciji)", "error");
     }
   };
 
   // Google login
   const handleLogin = () => {
-    handleGoogleLogin();
+    handleAuthClick();
   };
 
   // Google logout
@@ -119,12 +133,11 @@ function App() {
           borderRadius: "8px"
         }}>
           {isLoggedIn ? (
-            <div>
-              ✅ Prijavljen: {userEmail} 
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>✅ Prijavljen: {userEmail}</span>
               <button 
                 onClick={handleLogout}
                 style={{ 
-                  marginLeft: "10px", 
                   background: "#EF4444", 
                   color: "white", 
                   border: "none", 
@@ -137,12 +150,11 @@ function App() {
               </button>
             </div>
           ) : (
-            <div>
-              🔐 Niste prijavljeni 
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>🔐 Niste prijavljeni</span>
               <button 
                 onClick={handleLogin}
                 style={{ 
-                  marginLeft: "10px", 
                   background: "#10B981", 
                   color: "white", 
                   border: "none", 
@@ -171,13 +183,13 @@ function App() {
               <button 
                 onClick={loadDataFromDrive}
                 disabled={loading}
-                style={{ background: "#3B82F6", color: "white" }}
+                style={{ background: "#3B82F6", color: "white", border: "none", padding: "8px 12px", borderRadius: "4px", cursor: "pointer" }}
               >
                 {loading ? "⏳ Učitavam..." : "🔄 Učitaj sa Drive"}
               </button>
               <button 
                 onClick={handleManualBackup}
-                style={{ background: "#8B5CF6", color: "white" }}
+                style={{ background: "#8B5CF6", color: "white", border: "none", padding: "8px 12px", borderRadius: "4px", cursor: "pointer" }}
               >
                 📋 Ručni Backup
               </button>
