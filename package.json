@@ -1,6 +1,6 @@
 // src/googleDrive.js
 // ZAMENI SA TVOJIM NOVIM CLIENT_ID IZ GOOGLE CLOUD KONZOLE
-const CLIENT_ID = "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
+const CLIENT_ID = "778110423475-tvoj-novi-kod-ovde.apps.googleusercontent.com";
 
 let accessToken = localStorage.getItem('google_access_token') || null;
 let userEmail = localStorage.getItem('google_user_email') || null;
