@@ -1,5 +1,9 @@
 // src/googleDrive.js
 const CLIENT_ID = "778110423475-mo7qh57tcbfsnqlcojr1eu24e9obec5f.apps.googleusercontent.com";
+
+// KORISTIMO PRAVI REDIRECT URI KOJI JE U GOOGLE CLOUD KONZOLI
+const REDIRECT_URI = "https://your-app-domain.com"; // ZAMENI SA TVOJIM PRAVIM DOMENOM
+
 let accessToken = localStorage.getItem('google_access_token') || null;
 let userEmail = localStorage.getItem('google_user_email') || null;
 
@@ -17,11 +21,10 @@ function checkTokenExpiry() {
 
 // Google OAuth login
 export function handleGoogleLogin() {
-  const redirectUri = window.location.origin;
-  
+  // Koristi pravi redirect URI
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${CLIENT_ID}&` +
-    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
     `response_type=token&` +
     `scope=https://www.googleapis.com/auth/drive.file&` +
     `include_granted_scopes=true&` +
@@ -31,7 +34,7 @@ export function handleGoogleLogin() {
   window.location.href = authUrl;
 }
 
-// Provera autentifikacije nakon redirect-a
+// OSTALE FUNKCIJE OSTAJU ISTE...
 export function checkRedirectAuth() {
   const hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
@@ -52,7 +55,7 @@ export function checkRedirectAuth() {
   return false;
 }
 
-// Dobijanje korisničkog emaila
+// OSTALE FUNKCIJE OSTAJU NE PROMENJENE...
 export async function getUserInfo() {
   if (!accessToken) throw new Error("Niste prijavljeni");
   
@@ -77,7 +80,6 @@ export async function getUserInfo() {
   }
 }
 
-// Čuvanje podataka na Google Drive
 export async function saveToDrive(daysData) {
   checkTokenExpiry();
   if (!accessToken) {
@@ -98,7 +100,6 @@ export async function saveToDrive(daysData) {
     description: "Backup podataka BBL Billing App"
   };
 
-  // Pronađi postojeći fajl
   const query = "name='bbl_billing_data.json' and trashed=false";
   const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`, {
     headers: { Authorization: "Bearer " + accessToken },
@@ -138,7 +139,6 @@ export async function saveToDrive(daysData) {
   return true;
 }
 
-// Učitavanje podataka sa Google Drive
 export async function loadFromDrive() {
   checkTokenExpiry();
   if (!accessToken) {
@@ -175,7 +175,6 @@ export async function loadFromDrive() {
   }
 }
 
-// Ručni backup sistem
 export function manualBackup(daysData) {
   const allData = {
     days: daysData,
@@ -241,7 +240,6 @@ export function manualBackup(daysData) {
   textArea.select();
 }
 
-// Status funkcije
 export function showSyncStatus(message, type = 'info') {
   const statusEl = document.createElement('div');
   statusEl.textContent = message;
@@ -265,7 +263,6 @@ export function showSyncStatus(message, type = 'info') {
   }, 3000);
 }
 
-// Get current auth status
 export function getAuthStatus() {
   checkTokenExpiry();
   return {
@@ -275,7 +272,6 @@ export function getAuthStatus() {
   };
 }
 
-// Logout
 export function logout() {
   localStorage.removeItem('google_access_token');
   localStorage.removeItem('google_token_expiry');
