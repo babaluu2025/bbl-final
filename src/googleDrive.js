@@ -15,10 +15,9 @@ function checkTokenExpiry() {
   }
 }
 
-// KORISTIMO DINAMIČKI REDIRECT URI - OVO JE KLJUČNO!
 export function handleAuthClick() {
   const redirectUri = window.location.origin;
-  console.log('Redirect URI:', redirectUri); // Za debug
+  console.log('Redirect URI:', redirectUri);
   
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${CLIENT_ID}&` +
@@ -32,7 +31,6 @@ export function handleAuthClick() {
   window.location.href = authUrl;
 }
 
-// OSTALE FUNKCIJE OSTAJU ISTE...
 export function checkRedirectAuth() {
   const hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
@@ -178,10 +176,10 @@ export function manualBackup(daysData) {
 
   const jsonStr = JSON.stringify(allData, null, 2);
   
-  const choice = confirm("📋 RUČNI BACKUP\n\nOK: Kopiraj podatke (spasi u .txt fajl)\nOtkaži: Učitaj podatke (nalepi iz .txt fajla)");
+  // POPRAVLJENA LINIJA - koristi window.confirm umesto confirm
+  const choice = window.confirm("📋 RUČNI BACKUP\n\nOK: Kopiraj podatke (spasi u .txt fajl)\nOtkaži: Učitaj podatke (nalepi iz .txt fajla)");
   
   if (choice) {
-    // Kopiranje u clipboard
     const textArea = document.createElement('textarea');
     textArea.value = jsonStr;
     textArea.style.position = 'fixed';
