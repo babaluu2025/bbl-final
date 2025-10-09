@@ -13,20 +13,38 @@ function DayEntry({ onSave, initialData, onCancel }) {
   const [pocetnoStanje, setPocetnoStanje] = useState('');
   const [korekcija, setKorekcija] = useState('');
 
+  // Pomoćna funkcija za formatiranje datuma za input
+  const formatDateForInput = (dan, mjesec, godina) => {
+    if (!dan || !mjesec || !godina) return '';
+    
+    const formattedDan = dan.padStart(2, '0');
+    const formattedMjesec = mjesec.padStart(2, '0');
+    
+    return `${godina}-${formattedMjesec}-${formattedDan}`;
+  };
+
+  // Pomoćna funkcija za parsiranje datuma iz OCR-a
+  const parseDateFromOCR = (datumStr) => {
+    if (!datumStr) return { dan: '', mjesec: '', godina: '' };
+    
+    if (datumStr.includes('.')) {
+      const [d, m, y] = datumStr.split('.');
+      return { dan: d, mjesec: m, godina: y };
+    } else if (datumStr.includes('-')) {
+      const [y, m, d] = datumStr.split('-');
+      return { dan: d, mjesec: m, godina: y };
+    }
+    
+    return { dan: '', mjesec: '', godina: '' };
+  };
+
   useEffect(() => {
     if (initialData) {
-      // Ako već postoji datum u starom formatu, parsiraj ga
-      if (initialData.datum && initialData.datum.includes('-')) {
-        const [y, m, d] = initialData.datum.split('-');
-        setDan(d);
-        setMjesec(m);
-        setGodina(y);
-      } else if (initialData.datum && initialData.datum.includes('.')) {
-        // Ako je u dan.mjesec.godina formatu
-        const [d, m, y] = initialData.datum.split('.');
-        setDan(d);
-        setMjesec(m);
-        setGodina(y);
+      if (initialData.datum) {
+        const parsed = parseDateFromOCR(initialData.datum);
+        setDan(parsed.dan);
+        setMjesec(parsed.mjesec);
+        setGodina(parsed.godina);
       }
       
       setFiskalni(initialData.fiskalni?.toString() || '');
@@ -82,7 +100,7 @@ function DayEntry({ onSave, initialData, onCancel }) {
     const pazar = round(fisk + sun);
 
     const danObj = {
-      datum: formattedDatum, // Sada će biti u formatu "15.01.2024"
+      datum: formattedDatum,
       fiskalni: fisk,
       sunmi: sun,
       virmanText,
@@ -143,20 +161,10 @@ function DayEntry({ onSave, initialData, onCancel }) {
       <OcrUpload
         onExtract={(data) => {
           if (data.datum) {
-            // OCR će možda vratiti datum u različitim formatima
-            // Ovdje možemo dodati logiku za parsiranje ako je potrebno
-            const datumStr = data.datum;
-            if (datumStr.includes('.')) {
-              const [d, m, y] = datumStr.split('.');
-              setDan(d);
-              setMjesec(m);
-              setGodina(y);
-            } else if (datumStr.includes('-')) {
-              const [y, m, d] = datumStr.split('-');
-              setDan(d);
-              setMjesec(m);
-              setGodina(y);
-            }
+            const parsed = parseDateFromOCR(data.datum);
+            setDan(parsed.dan);
+            setMjesec(parsed.mjesec);
+            setGodina(parsed.godina);
           }
           if (data.fiskalni) setFiskalni(data.fiskalni);
           if (data.sunmi) setSunmi(data.sunmi);
@@ -166,43 +174,24 @@ function DayEntry({ onSave, initialData, onCancel }) {
         }}
       />
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-        <div style={{ flex: 1 }}>
-          <label>📅 Dan:</label>
-          <input 
-            type="number" 
-            value={dan} 
-            onChange={(e) => setDan(e.target.value)} 
-            min="1" 
-            max="31" 
-            placeholder="15"
-            style={{ width: '100%' }}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label>📅 Mjesec:</label>
-          <input 
-            type="number" 
-            value={mjesec} 
-            onChange={(e) => setMjesec(e.target.value)} 
-            min="1" 
-            max="12" 
-            placeholder="1"
-            style={{ width: '100%' }}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label>📅 Godina:</label>
-          <input 
-            type="number" 
-            value={godina} 
-            onChange={(e) => setGodina(e.target.value)} 
-            min="2020" 
-            max="2030" 
-            placeholder="2024"
-            style={{ width: '100%' }}
-          />
-        </div>
+      <div style={{ marginBottom: '15px' }}>
+        <label>📅 Datum (dan.mjesec.godina):</label>
+        <input 
+          type="date" 
+          value={formatDateForInput(dan, mjesec, godina)} 
+          onChange={(e) => {
+            const date = new Date(e.target.value);
+            if (!isNaN(date.getTime())) {
+              setDan(date.getDate().toString());
+              setMjesec((date.getMonth() + 1).toString());
+              setGodina(date.getFullYear().toString());
+            }
+          }}
+          style={{ width: '100%', padding: '10px', fontSize: '16px' }}
+        />
+        <small style={{ color: '#666' }}>
+          Odaberi datum - automatski će biti formatiran kao dan.mjesec.godina
+        </small>
       </div>
 
       <label>🧾 Fiskalni račun:</label>
@@ -226,7 +215,7 @@ function DayEntry({ onSave, initialData, onCancel }) {
       <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
-      <button type="submit" style={{ marginTop: '15px' }}>
+      <button type="submit" style={{ marginTop: '15px', padding: '12px 20px', fontSize: '16px' }}>
         💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}
       </button>
     </form>
