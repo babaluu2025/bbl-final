@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import OcrUpload from './OcrUpload'; // 📷 OCR komponenta
+import OcrUpload from './OcrUpload';
 
-function DayEntry({ onSave, initialData }) {
-  const [datum, setDatum] = useState('');
+function DayEntry({ onSave, initialData, onCancel }) {
+  const [dan, setDan] = useState('');
+  const [mjesec, setMjesec] = useState('');
+  const [godina, setGodina] = useState('');
   const [fiskalni, setFiskalni] = useState('');
   const [sunmi, setSunmi] = useState('');
   const [virmanText, setVirmanText] = useState('');
@@ -13,7 +15,20 @@ function DayEntry({ onSave, initialData }) {
 
   useEffect(() => {
     if (initialData) {
-      setDatum(initialData.datum || '');
+      // Ako već postoji datum u starom formatu, parsiraj ga
+      if (initialData.datum && initialData.datum.includes('-')) {
+        const [y, m, d] = initialData.datum.split('-');
+        setDan(d);
+        setMjesec(m);
+        setGodina(y);
+      } else if (initialData.datum && initialData.datum.includes('.')) {
+        // Ako je u dan.mjesec.godina formatu
+        const [d, m, y] = initialData.datum.split('.');
+        setDan(d);
+        setMjesec(m);
+        setGodina(y);
+      }
+      
       setFiskalni(initialData.fiskalni?.toString() || '');
       setSunmi(initialData.sunmi?.toString() || '');
       setVirmanText(initialData.virmanText || '');
@@ -21,6 +36,12 @@ function DayEntry({ onSave, initialData }) {
       setKesDobitText(initialData.kesDobitText || '');
       setPocetnoStanje(initialData.pocetnoStanje?.toString() || '');
       setKorekcija(initialData.korekcija?.toString() || '');
+    } else {
+      // Podrazumevane vrijednosti za novi unos
+      const today = new Date();
+      setDan(today.getDate().toString());
+      setMjesec((today.getMonth() + 1).toString());
+      setGodina(today.getFullYear().toString());
     }
   }, [initialData]);
 
@@ -42,6 +63,9 @@ function DayEntry({ onSave, initialData }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // Formiraj datum u dan.mjesec.godina formatu
+    const formattedDatum = `${dan.padStart(2, '0')}.${mjesec.padStart(2, '0')}.${godina}`;
+
     const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
     const kesDobit = round(parseLines(kesDobitText).reduce((a, b) => a + b, 0));
     const virmani = round(parseLines(virmanText).reduce((a, b) => a + b, 0));
@@ -57,8 +81,8 @@ function DayEntry({ onSave, initialData }) {
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
 
-    const dan = {
-      datum,
+    const danObj = {
+      datum: formattedDatum, // Sada će biti u formatu "15.01.2024"
       fiskalni: fisk,
       sunmi: sun,
       virmanText,
@@ -76,26 +100,64 @@ function DayEntry({ onSave, initialData }) {
       stanje,
     };
 
-    onSave(dan);
+    onSave(danObj);
 
-    // Reset
-    setDatum('');
-    setFiskalni('');
-    setSunmi('');
-    setVirmanText('');
-    setRashodiText('');
-    setKesDobitText('');
-    setPocetnoStanje('');
-    setKorekcija('');
+    // Reset samo ako nije edit mode
+    if (!initialData) {
+      setDan('');
+      setMjesec('');
+      setGodina('');
+      setFiskalni('');
+      setSunmi('');
+      setVirmanText('');
+      setRashodiText('');
+      setKesDobitText('');
+      setPocetnoStanje('');
+      setKorekcija('');
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>📘 {initialData ? 'Izmena dana' : 'Unos novog dana'}</h2>
+      <h2>📘 {initialData ? '✏️ Izmena dana' : 'Unos novog dana'}</h2>
+
+      {onCancel && (
+        <div style={{ marginBottom: '15px' }}>
+          <button 
+            type="button" 
+            onClick={onCancel}
+            style={{
+              background: '#EF4444',
+              color: 'white',
+              border: 'none',
+              padding: '8px 15px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            ❌ Otkaži Edit
+          </button>
+        </div>
+      )}
 
       <OcrUpload
         onExtract={(data) => {
-          if (data.datum) setDatum(data.datum);
+          if (data.datum) {
+            // OCR će možda vratiti datum u različitim formatima
+            // Ovdje možemo dodati logiku za parsiranje ako je potrebno
+            const datumStr = data.datum;
+            if (datumStr.includes('.')) {
+              const [d, m, y] = datumStr.split('.');
+              setDan(d);
+              setMjesec(m);
+              setGodina(y);
+            } else if (datumStr.includes('-')) {
+              const [y, m, d] = datumStr.split('-');
+              setDan(d);
+              setMjesec(m);
+              setGodina(y);
+            }
+          }
           if (data.fiskalni) setFiskalni(data.fiskalni);
           if (data.sunmi) setSunmi(data.sunmi);
           if (data.virmanText) setVirmanText(data.virmanText);
@@ -104,8 +166,44 @@ function DayEntry({ onSave, initialData }) {
         }}
       />
 
-      <label>📅 Datum:</label>
-      <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} required />
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+        <div style={{ flex: 1 }}>
+          <label>📅 Dan:</label>
+          <input 
+            type="number" 
+            value={dan} 
+            onChange={(e) => setDan(e.target.value)} 
+            min="1" 
+            max="31" 
+            placeholder="15"
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label>📅 Mjesec:</label>
+          <input 
+            type="number" 
+            value={mjesec} 
+            onChange={(e) => setMjesec(e.target.value)} 
+            min="1" 
+            max="12" 
+            placeholder="1"
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label>📅 Godina:</label>
+          <input 
+            type="number" 
+            value={godina} 
+            onChange={(e) => setGodina(e.target.value)} 
+            min="2020" 
+            max="2030" 
+            placeholder="2024"
+            style={{ width: '100%' }}
+          />
+        </div>
+      </div>
 
       <label>🧾 Fiskalni račun:</label>
       <input type="text" value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
@@ -128,7 +226,9 @@ function DayEntry({ onSave, initialData }) {
       <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
-      <button type="submit">💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}</button>
+      <button type="submit" style={{ marginTop: '15px' }}>
+        💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}
+      </button>
     </form>
   );
 }
