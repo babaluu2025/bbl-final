@@ -193,7 +193,13 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            style={{ marginTop: '5px' }}
+            style={{ 
+              marginTop: '5px',
+              padding: '10px',
+              border: '2px solid #e2e8f0',
+              borderRadius: '8px',
+              fontSize: '16px'
+            }}
           />
         </div>
         
@@ -204,7 +210,13 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             type="date"
             value={selectedWeek}
             onChange={(e) => setSelectedWeek(e.target.value)}
-            style={{ marginTop: '5px' }}
+            style={{ 
+              marginTop: '5px',
+              padding: '10px',
+              border: '2px solid #e2e8f0',
+              borderRadius: '8px',
+              fontSize: '16px'
+            }}
           />
         </div>
 
@@ -218,9 +230,11 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
               background: '#6B7280',
               color: 'white',
               border: 'none',
-              padding: '8px 15px',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              padding: '10px 15px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold'
             }}
           >
             🗑️ Očisti filtere
@@ -241,16 +255,22 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
         </div>
       ) : (
         <div>
-          <div style={{ marginBottom: '15px', padding: '10px', background: '#f8f9fa', borderRadius: '5px' }}>
+          <div style={{ 
+            marginBottom: '15px', 
+            padding: '12px', 
+            background: '#f8f9fa', 
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0'
+          }}>
             <strong>Prikazano: {getWeekFiltered().length} od {allEntries.length} unosa</strong>
             {selectedMonth && (
-              <span style={{ marginLeft: '15px' }}>
-                Filter: Mjesec {selectedMonth}
+              <span style={{ marginLeft: '15px', color: '#2563eb' }}>
+                📅 Filter: Mjesec {selectedMonth}
               </span>
             )}
             {selectedWeek && (
-              <span style={{ marginLeft: '15px' }}>
-                Nedjelja počinje: {new Date(selectedWeek).toLocaleDateString('sr-RS')}
+              <span style={{ marginLeft: '15px', color: '#2563eb' }}>
+                🗓️ Nedjelja počinje: {new Date(selectedWeek).toLocaleDateString('sr-RS')}
               </span>
             )}
           </div>
@@ -262,7 +282,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                 key={entry.id}
                 style={{
                   marginBottom: 30,
-                  padding: 20,
+                  padding: "20px",
                   border: "2px solid #e2e8f0",
                   borderRadius: 12,
                   backgroundColor: "#ffffff",
@@ -270,8 +290,15 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                   boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
                 }}
               >
-                {/* EDIT i DELETE dugmad u gornjem desnom uglu */}
-                <div style={{ position: "absolute", top: "15px", right: "15px", display: "flex", gap: "8px" }}>
+                {/* EDIT i DELETE dugmad - POBOLJŠANA POZICIJA */}
+                <div style={{ 
+                  position: "absolute", 
+                  top: "15px", 
+                  right: "15px", 
+                  display: "flex", 
+                  gap: "8px",
+                  flexDirection: "column"
+                }}>
                   <button 
                     onClick={() => handleEdit(entry)}
                     style={{
@@ -279,10 +306,11 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                       color: "white",
                       border: "none",
                       borderRadius: "6px",
-                      padding: "6px 12px",
+                      padding: "8px 12px",
                       cursor: "pointer",
                       fontSize: "12px",
-                      fontWeight: "bold"
+                      fontWeight: "bold",
+                      minWidth: "70px"
                     }}
                     title="Izmeni ovaj dan"
                   >
@@ -295,10 +323,11 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                       color: "white",
                       border: "none",
                       borderRadius: "6px",
-                      padding: "6px 12px",
+                      padding: "8px 12px",
                       cursor: "pointer",
                       fontSize: "12px",
-                      fontWeight: "bold"
+                      fontWeight: "bold",
+                      minWidth: "70px"
                     }}
                     title="Obriši ovaj dan"
                   >
@@ -306,11 +335,16 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                   </button>
                 </div>
 
+                {/* DATUM SA PADDING-OM */}
                 <h3 style={{ 
                   color: "#2563eb", 
                   marginBottom: "15px",
                   borderBottom: "2px solid #2563eb",
-                  paddingBottom: "8px"
+                  paddingBottom: "8px",
+                  paddingRight: "90px",
+                  minHeight: "50px",
+                  fontSize: '18px',
+                  fontWeight: 'bold'
                 }}>
                   📆 {entry.datum}
                 </h3>
@@ -344,7 +378,8 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     borderRadius: "6px",
                     border: "1px solid #e2e8f0",
                     whiteSpace: 'pre-wrap',
-                    margin: '5px 0'
+                    margin: '5px 0',
+                    fontSize: '14px'
                   }}>
                     {entry.virmanText || 'Nema podataka'}
                   </pre>
@@ -361,7 +396,8 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     borderRadius: "6px",
                     border: "1px solid #fecaca",
                     whiteSpace: 'pre-wrap',
-                    margin: '5px 0'
+                    margin: '5px 0',
+                    fontSize: '14px'
                   }}>
                     {entry.rashodiText || 'Nema podataka'}
                   </pre>
@@ -378,7 +414,8 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     borderRadius: "6px",
                     border: "1px solid #bbf7d0",
                     whiteSpace: 'pre-wrap',
-                    margin: '5px 0'
+                    margin: '5px 0',
+                    fontSize: '14px'
                   }}>
                     {entry.kesDobitText || 'Nema podataka'}
                   </pre>
@@ -391,7 +428,8 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                   background: '#f8f9fa', 
                   padding: '12px', 
                   borderRadius: '8px',
-                  marginTop: '15px'
+                  marginTop: '15px',
+                  border: '1px solid #e2e8f0'
                 }}>
                   <p><strong>📦 Početno stanje kase:</strong> {format(entry.pocetnoStanje)} €</p>
                   <p><strong>✏️ Korekcija:</strong> {format(entry.korekcija)} €</p>
@@ -405,11 +443,12 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                       background: "#10B981",
                       color: "white",
                       border: "none",
-                      borderRadius: "6px",
-                      padding: "10px 20px",
+                      borderRadius: "8px",
+                      padding: "12px 20px",
                       cursor: "pointer",
                       fontWeight: "bold",
-                      flex: 1
+                      flex: 1,
+                      fontSize: '14px'
                     }}
                   >
                     🖨️ Štampaj dan
