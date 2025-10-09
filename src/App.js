@@ -179,6 +179,24 @@ const handleRepairAuth = () => {
       <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
         <h1>📘 BBL Billing App {editingDay && " - ✏️ Edit Mode"}</h1>
 
+// U return dijelu App.js, dodaj ovo u status bar:
+{isLoggedIn && getAuthStatus().tokenExpired && (
+  <button 
+    onClick={handleRepairAuth}
+    style={{ 
+      background: "#EF4444", 
+      color: "white", 
+      border: "none", 
+      padding: "5px 10px", 
+      borderRadius: "4px",
+      cursor: "pointer",
+      marginLeft: "10px"
+    }}
+  >
+    🛠️ Popravi Login
+  </button>
+)}
+
         {/* Status bar */}
         <div style={{ 
           marginBottom: "20px", 
