@@ -78,41 +78,52 @@ function App() {
     }
   };
 
-  // Čuvanje novog dana
-  const handleSave = async (dan) => {
-    let newDays;
+// U App.js, zamijeni handleSave funkciju sa ovom:
+const handleSave = async (dan) => {
+  let newDays;
 
-    if (editingDay) {
-      // EDIT MODE: Ažuriraj postojeći dan
-      newDays = days.map(day => 
-        day.id === editingDay.id ? { ...dan, id: editingDay.id } : day
-      );
-      setEditingDay(null); // Završi edit mode
+  if (editingDay) {
+    // EDIT MODE: Ažuriraj postojeći dan
+    newDays = days.map(day => 
+      day.id === editingDay.id ? { ...dan, id: editingDay.id } : day
+    );
+    setEditingDay(null);
+  } else {
+    // NEW MODE: Dodaj novi dan
+    const newDay = { 
+      ...dan, 
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    newDays = [...days, newDay];
+  }
+
+  setDays(newDays);
+  localStorage.setItem('bbl_days', JSON.stringify(newDays));
+  
+  // AUTOMATSKI SYNC AKO JE PRIJAVLJEN
+  try {
+    const syncSuccess = await autoSyncIfLoggedIn(newDays);
+    if (syncSuccess) {
+      showSyncStatus(editingDay ? "✅ Dan ažuriran i sinhronizovan" : "✅ Dan sačuvan i sinhronizovan", "success");
     } else {
-      // NEW MODE: Dodaj novi dan
-      const newDay = { 
-        ...dan, 
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      newDays = [...days, newDay];
+      showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "info");
     }
+  } catch (error) {
+    console.error("Greška pri sinhronizaciji:", error);
+    showSyncStatus("⚠️ Podaci sačuvani lokalno", "warning");
+  }
+};
 
-    setDays(newDays);
-    localStorage.setItem('bbl_days', JSON.stringify(newDays));
-    
-    try {
-      if (isLoggedIn) {
-        await saveToDrive(newDays);
-        showSyncStatus(editingDay ? "✅ Dan ažuriran i sinhronizovan" : "✅ Dan sačuvan i sinhronizovan", "success");
-      } else {
-        showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "info");
-      }
-    } catch (error) {
-      console.error("Greška pri čuvanju na Drive:", error);
-      showSyncStatus("⚠️ Podaci sačuvani lokalno (greška pri sinhronizaciji)", "error");
-    }
-  };
+// I dodaj repair funkciju:
+const handleRepairAuth = () => {
+  if (repairAuth()) {
+    // Nakon čišćenja, pokušaj ponovo login
+    setTimeout(() => {
+      handleLogin();
+    }, 1000);
+  }
+};
 
   // Brisanje dana
   const handleDeleteDay = async (dayId) => {
