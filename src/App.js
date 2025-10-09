@@ -19,6 +19,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [editingDay, setEditingDay] = useState(null); // Za edit mode
 
   // Učitaj lokalne podatke pri startu
   useEffect(() => {
@@ -79,26 +80,69 @@ function App() {
 
   // Čuvanje novog dana
   const handleSave = async (dan) => {
-    const newDay = { 
-      ...dan, 
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    const newDays = [...days, newDay];
+    let newDays;
+
+    if (editingDay) {
+      // EDIT MODE: Ažuriraj postojeći dan
+      newDays = days.map(day => 
+        day.id === editingDay.id ? { ...dan, id: editingDay.id } : day
+      );
+      setEditingDay(null); // Završi edit mode
+    } else {
+      // NEW MODE: Dodaj novi dan
+      const newDay = { 
+        ...dan, 
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      };
+      newDays = [...days, newDay];
+    }
+
     setDays(newDays);
     localStorage.setItem('bbl_days', JSON.stringify(newDays));
     
     try {
       if (isLoggedIn) {
         await saveToDrive(newDays);
-        showSyncStatus("✅ Dan sačuvan i sinhronizovan na Drive", "success");
+        showSyncStatus(editingDay ? "✅ Dan ažuriran i sinhronizovan" : "✅ Dan sačuvan i sinhronizovan", "success");
       } else {
-        showSyncStatus("✅ Dan sačuvan lokalno", "info");
+        showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "info");
       }
     } catch (error) {
       console.error("Greška pri čuvanju na Drive:", error);
-      showSyncStatus("⚠️ Dan sačuvan lokalno (greška pri sinhronizaciji)", "error");
+      showSyncStatus("⚠️ Podaci sačuvani lokalno (greška pri sinhronizaciji)", "error");
     }
+  };
+
+  // Brisanje dana
+  const handleDeleteDay = async (dayId) => {
+    const newDays = days.filter(day => day.id !== dayId);
+    setDays(newDays);
+    localStorage.setItem('bbl_days', JSON.stringify(newDays));
+    
+    try {
+      if (isLoggedIn) {
+        await saveToDrive(newDays);
+        showSyncStatus("✅ Dan obrisan i sinhronizovan", "success");
+      } else {
+        showSyncStatus("✅ Dan obrisan lokalno", "info");
+      }
+    } catch (error) {
+      console.error("Greška pri brisanju sa Drive:", error);
+      showSyncStatus("⚠️ Dan obrisan lokalno (greška pri sinhronizaciji)", "error");
+    }
+  };
+
+  // Edit dana
+  const handleEditDay = (day) => {
+    setEditingDay(day);
+    // Automatski navigiraj na unos dana
+    window.history.pushState({}, '', '/');
+  };
+
+  // Otkazivanje edit mode
+  const handleCancelEdit = () => {
+    setEditingDay(null);
   };
 
   // Google login
@@ -122,7 +166,7 @@ function App() {
   return (
     <Router>
       <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-        <h1>📘 BBL Billing App</h1>
+        <h1>📘 BBL Billing App {editingDay && " - ✏️ Edit Mode"}</h1>
 
         {/* Status bar */}
         <div style={{ 
@@ -172,11 +216,22 @@ function App() {
         {/* Navigacija i akcije */}
         <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <Link to="/">
-            <button style={{ marginRight: "10px" }}>📝 Unos dana</button>
+            <button style={{ marginRight: "10px" }}>
+              {editingDay ? "✏️ Edit Dan" : "📝 Unos dana"}
+            </button>
           </Link>
           <Link to="/summary">
             <button>📂 Sumarni pregled</button>
           </Link>
+          
+          {editingDay && (
+            <button 
+              onClick={handleCancelEdit}
+              style={{ background: "#6B7280", color: "white", border: "none", padding: "8px 12px", borderRadius: "4px", cursor: "pointer" }}
+            >
+              ❌ Otkaži Edit
+            </button>
+          )}
           
           {isLoggedIn && (
             <>
@@ -199,8 +254,26 @@ function App() {
 
         {/* Rute */}
         <Routes>
-          <Route path="/" element={<DayEntry onSave={handleSave} />} />
-          <Route path="/summary" element={<SummaryView days={days} />} />
+          <Route 
+            path="/" 
+            element={
+              <DayEntry 
+                onSave={handleSave} 
+                initialData={editingDay}
+                onCancel={editingDay ? handleCancelEdit : null}
+              />
+            } 
+          />
+          <Route 
+            path="/summary" 
+            element={
+              <SummaryView 
+                days={days} 
+                onDeleteDay={handleDeleteDay}
+                onEditDay={handleEditDay}
+              />
+            } 
+          />
         </Routes>
       </div>
     </Router>
