@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import OcrUpload from './OcrUpload';
 
-function DayEntry({ onSave, initialData, onCancel, days }) { // DODAJ days prop
+function DayEntry({ onSave, initialData, onCancel, days }) {
   const [dan, setDan] = useState('');
   const [mjesec, setMjesec] = useState('');
   const [godina, setGodina] = useState('');
@@ -67,6 +67,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) { // DODAJ days prop
     return new Date(dateStr);
   };
 
+  // EFIKASNIJI useEffect KOJI PRATI PROMJENE U days
   useEffect(() => {
     if (initialData) {
       // EDIT MODE - koristi postojeće vrijednosti
@@ -93,11 +94,18 @@ function DayEntry({ onSave, initialData, onCancel, days }) { // DODAJ days prop
       
       // AUTOMATSKO POSTAVLJANJE POČETNOG STANJA IZ PRETHODNOG DANA
       const previousCashState = getPreviousDayCashState();
-      if (previousCashState > 0) {
-        setPocetnoStanje(previousCashState.toString());
-      }
+      setPocetnoStanje(previousCashState.toString());
     }
-  }, [initialData, days]); // DODAJ days u dependency array
+  }, [initialData]); // Uklonili smo days iz dependency array
+
+  // NOVI useEffect KOJI ĆE PRATITI PROMJENE U days I AŽURIRATI POČETNO STANJE
+  useEffect(() => {
+    if (!initialData && days && days.length > 0) {
+      // Samo za NOVI DAN (ne u edit mode) ažuriraj početno stanje kada se days promijeni
+      const previousCashState = getPreviousDayCashState();
+      setPocetnoStanje(previousCashState.toString());
+    }
+  }, [days, initialData]); // Pratimo promjene u days
 
   const parseLines = (text, forcePositive = false) => {
     return text
