@@ -1,779 +1,225 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from 'react';
+import OcrUpload from './OcrUpload';
 
-function SummaryView({ days, onDeleteDay, onEditDay }) {
-  const [allEntries, setAllEntries] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState("");
-  const [selectedWeek, setSelectedWeek] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
+function DayEntry({ onSave, initialData, onCancel }) {
+  const [dan, setDan] = useState('');
+  const [mjesec, setMjesec] = useState('');
+  const [godina, setGodina] = useState('');
+  const [fiskalni, setFiskalni] = useState('');
+  const [sunmi, setSunmi] = useState('');
+  const [virmanText, setVirmanText] = useState('');
+  const [rashodiText, setRashodiText] = useState('');
+  const [kesDobitText, setKesDobitText] = useState('');
+  const [pocetnoStanje, setPocetnoStanje] = useState('');
+  const [korekcija, setKorekcija] = useState('');
 
-  // Detektuj da li je mobile na osnovu širine ekrana
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
+  // Pomoćna funkcija za formatiranje datuma za input
+  const formatDateForInput = (dan, mjesec, godina) => {
+    if (!dan || !mjesec || !godina) return '';
     
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
+    const formattedDan = dan.padStart(2, '0');
+    const formattedMjesec = mjesec.padStart(2, '0');
     
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+    return `${godina}-${formattedMjesec}-${formattedDan}`;
+  };
+
+  // Pomoćna funkcija za parsiranje datuma iz OCR-a
+  const parseDateFromOCR = (datumStr) => {
+    if (!datumStr) return { dan: '', mjesec: '', godina: '' };
+    
+    if (datumStr.includes('.')) {
+      const [d, m, y] = datumStr.split('.');
+      return { dan: d, mjesec: m, godina: y };
+    } else if (datumStr.includes('-')) {
+      const [y, m, d] = datumStr.split('-');
+      return { dan: d, mjesec: m, godina: y };
+    }
+    
+    return { dan: '', mjesec: '', godina: '' };
+  };
 
   useEffect(() => {
-    setAllEntries(days);
-  }, [days]);
-
-  const getMonthFiltered = () => {
-    if (!selectedMonth) return allEntries;
-    return allEntries.filter((entry) => {
-      if (!entry.datum) return false;
-      
-      if (entry.datum.includes('.')) {
-        const [dan, mjesec, godina] = entry.datum.split('.');
-        const entryMonth = `${godina}-${mjesec.padStart(2, '0')}`;
-        return entryMonth === selectedMonth;
+    if (initialData) {
+      if (initialData.datum) {
+        const parsed = parseDateFromOCR(initialData.datum);
+        setDan(parsed.dan);
+        setMjesec(parsed.mjesec);
+        setGodina(parsed.godina);
       }
       
-      return entry.datum?.startsWith(selectedMonth);
-    });
-  };
-
-  const getWeekFiltered = () => {
-    if (!selectedWeek) return getMonthFiltered();
-    return getMonthFiltered().filter((entry) => {
-      if (!entry.datum) return false;
-      
-      const entryDate = parseDate(entry.datum);
-      const weekStart = new Date(selectedWeek);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      
-      return entryDate >= weekStart && entryDate <= weekEnd;
-    });
-  };
-
-  // Pomocna funkcija za parsiranje datuma
-  const parseDate = (dateStr) => {
-    if (!dateStr) return new Date(0);
-    if (dateStr.includes('.')) {
-      const [dan, mjesec, godina] = dateStr.split('.');
-      return new Date(`${godina}-${mjesec.padStart(2, '0')}-${dan.padStart(2, '0')}`);
+      setFiskalni(initialData.fiskalni?.toString() || '');
+      setSunmi(initialData.sunmi?.toString() || '');
+      setVirmanText(initialData.virmanText || '');
+      setRashodiText(initialData.rashodiText || '');
+      setKesDobitText(initialData.kesDobitText || '');
+      setPocetnoStanje(initialData.pocetnoStanje?.toString() || '');
+      setKorekcija(initialData.korekcija?.toString() || '');
+    } else {
+      // Podrazumevane vrijednosti za novi unos
+      const today = new Date();
+      setDan(today.getDate().toString());
+      setMjesec((today.getMonth() + 1).toString());
+      setGodina(today.getFullYear().toString());
     }
-    return new Date(dateStr);
+  }, [initialData]);
+
+  const parseLines = (text, forcePositive = false) => {
+    return text
+      .split('\n')
+      .map(line => {
+        const cleaned = line.replace(',', '.');
+        const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
+        if (!match) return 0;
+        let value = parseFloat(match[0]);
+        if (forcePositive) value = Math.abs(value);
+        return isNaN(value) ? 0 : value;
+      });
   };
 
-  const format = (n) =>
-    typeof n === "number"
-      ? n.toLocaleString("de-DE", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : n;
+  const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
-  const handleDelete = (entryId) => {
-    if (window.confirm("Da li ste sigurni da želite da obrišete ovaj dan?")) {
-      onDeleteDay(entryId);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Formiraj datum u dan.mjesec.godina formatu
+    const formattedDatum = `${dan.padStart(2, '0')}.${mjesec.padStart(2, '0')}.${godina}`;
+
+    const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
+    const kesDobit = round(parseLines(kesDobitText).reduce((a, b) => a + b, 0));
+    const virmani = round(parseLines(virmanText).reduce((a, b) => a + b, 0));
+
+    const fisk = parseFloat(fiskalni.replace(',', '.')) || 0;
+    const sun = parseFloat(sunmi.replace(',', '.')) || 0;
+    const korek = parseFloat(korekcija.replace(',', '.')) || 0;
+    const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
+
+    const stvarnaUplata = round(fisk - virmani);
+    const rezultat = round(sun + kesDobit - rashodi);
+    const stanje = round(pocStanje + rezultat + korek);
+    const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
+    const pazar = round(fisk + sun);
+
+    const danObj = {
+      datum: formattedDatum,
+      fiskalni: fisk,
+      sunmi: sun,
+      virmanText,
+      virmani,
+      rashodiText,
+      kesDobitText,
+      rashodi,
+      kesDobit,
+      stvarnaUplata,
+      rezultat,
+      uplacenPazar,
+      pazar,
+      pocetnoStanje: pocStanje,
+      korekcija: korek,
+      stanje,
+    };
+
+    onSave(danObj);
+
+    // Reset samo ako nije edit mode
+    if (!initialData) {
+      setDan('');
+      setMjesec('');
+      setGodina('');
+      setFiskalni('');
+      setSunmi('');
+      setVirmanText('');
+      setRashodiText('');
+      setKesDobitText('');
+      setPocetnoStanje('');
+      setKorekcija('');
     }
-  };
-
-  const handleEdit = (entry) => {
-    onEditDay(entry);
-  };
-
-  const printDay = (entry) => {
-    const html = `
-      <html>
-        <head>
-          <title>Štampanje dana</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              padding: 20px; 
-              max-width: 800px;
-              margin: 0 auto;
-              font-size: 14px;
-            }
-            .header { 
-              text-align: center; 
-              margin-bottom: 20px;
-              border-bottom: 2px solid #333;
-              padding-bottom: 10px;
-            }
-            h2 { 
-              margin-bottom: 10px; 
-              color: #2563eb;
-              font-size: 18px;
-            }
-            .section { 
-              margin-bottom: 15px; 
-              padding: 12px;
-              border: 1px solid #ddd;
-              border-radius: 8px;
-              background: #fafafa;
-            }
-            .section-title { 
-              font-weight: bold; 
-              color: #2563eb;
-              margin-bottom: 8px;
-              font-size: 15px;
-            }
-            p { 
-              margin: 6px 0; 
-              font-size: 14px;
-              word-break: break-word;
-            }
-            pre { 
-              background: #f4f4f4; 
-              padding: 10px; 
-              border-radius: 6px;
-              white-space: pre-wrap;
-              font-family: Arial, sans-serif;
-              font-size: 13px;
-              margin: 8px 0;
-            }
-            .total { 
-              font-weight: bold; 
-              color: #10B981;
-              margin-top: 8px;
-              font-size: 14px;
-            }
-            .negative { color: #EF4444; }
-            .positive { color: #10B981; }
-            .value {
-              font-weight: bold;
-              color: #1f2937;
-            }
-            @media print {
-              body { padding: 15px; }
-              .no-print { display: none; }
-            }
-            @media (max-width: 480px) {
-              body { padding: 10px; font-size: 12px; }
-              h2 { font-size: 16px; }
-              .section { padding: 8px; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>📊 BBL Billing - Dnevni izveštaj</h2>
-            <h3>📅 Datum: ${entry.datum}</h3>
-          </div>
-
-          <div class="section">
-            <div class="section-title">💰 Osnovni podaci:</div>
-            <p>🧾 Fiskalni računi: <span class="value">${format(entry.fiskalni)} €</span></p>
-            <p>💵 Sunmi (gotovina): <span class="value">${format(entry.sunmi)} €</span></p>
-            <p>📊 Ukupan pazar: <span class="value">${format(entry.pazar)} €</span></p>
-            <p>📉 Stvarni pazar za uplatu: <span class="value">${format(entry.stvarnaUplata)} €</span></p>
-          </div>
-
-          <div class="section">
-            <div class="section-title">🏦 Viza i Fakture:</div>
-            <pre>${entry.virmanText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${format(entry.virmani)} €</p>
-          </div>
-
-          <div class="section">
-            <div class="section-title">💸 Rashodi:</div>
-            <pre>${entry.rashodiText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${format(entry.rashodi)} €</p>
-          </div>
-
-          <div class="section">
-            <div class="section-title">💰 Keš dobit:</div>
-            <pre>${entry.kesDobitText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${format(entry.kesDobit)} €</p>
-          </div>
-
-          <div class="section">
-            <div class="section-title">🧮 Rezultat i stanje kase:</div>
-            <p>Rezultat dana: <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${format(entry.rezultat)} €</span></p>
-            <p>Početno stanje kase: <span class="value">${format(entry.pocetnoStanje)} €</span></p>
-            <p>Korekcija: <span class="value">${format(entry.korekcija)} €</span></p>
-            <p class="total">Stanje kase: <span class="value">${format(entry.stanje)} €</span></p>
-            <p class="total">Uplaćen pazar: <span class="value">${format(entry.uplacenPazar)} €</span></p>
-          </div>
-
-          <div class="no-print" style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc;">
-            <p><small>Štampano: ${new Date().toLocaleDateString('sr-RS')}</small></p>
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-            };
-          </script>
-        </body>
-      </html>
-    `;
-    const newWindow = window.open("", "_blank");
-    newWindow.document.write(html);
-    newWindow.document.close();
   };
 
   return (
-    <div style={{ 
-      padding: "15px", 
-      maxWidth: "100%",
-      boxSizing: "border-box"
-    }}>
-      <h2 style={{ 
-        fontSize: "20px", 
-        marginBottom: "10px",
-        textAlign: "center"
-      }}>
-        📂 Sumarni pregled
-      </h2>
-      
-      <p style={{ 
-        textAlign: "center", 
-        marginBottom: "20px",
-        color: "#666"
-      }}>
-        Ukupno unosa: {allEntries.length}
-      </p>
+    <form onSubmit={handleSubmit}>
+      <h2>📘 {initialData ? '✏️ Izmena dana' : 'Unos novog dana'}</h2>
 
-      {/* Filteri */}
-      <div style={{ 
-        marginBottom: '20px', 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: '15px'
-      }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            📅 Mjesec:
-          </label>
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            style={{ 
-              width: '100%', 
-              padding: '12px',
-              fontSize: '16px',
-              border: '2px solid #e2e8f0',
-              borderRadius: '8px'
+      {onCancel && (
+        <div style={{ marginBottom: '15px' }}>
+          <button 
+            type="button" 
+            onClick={onCancel}
+            style={{
+              background: '#EF4444',
+              color: 'white',
+              border: 'none',
+              padding: '8px 15px',
+              borderRadius: '4px',
+              cursor: 'pointer'
             }}
-          />
-        </div>
-        
-        <div>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            🗓️ Početni dan nedjelje:
-          </label>
-          <input
-            type="date"
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
-            style={{ 
-              width: '100%', 
-              padding: '12px',
-              fontSize: '16px',
-              border: '2px solid #e2e8f0',
-              borderRadius: '8px'
-            }}
-          />
-        </div>
-
-        <button 
-          onClick={() => {
-            setSelectedMonth('');
-            setSelectedWeek('');
-          }}
-          style={{
-            background: '#6B7280',
-            color: 'white',
-            border: 'none',
-            padding: '12px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}
-        >
-          🗑️ Očisti filtere
-        </button>
-      </div>
-
-      <hr style={{ margin: '20px 0', border: '1px solid #e2e8f0' }} />
-
-      {getWeekFiltered().length === 0 ? (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#666',
-          background: '#f8f9fa',
-          borderRadius: '12px',
-          margin: '20px 0'
-        }}>
-          <h3 style={{ fontSize: '18px', marginBottom: '10px' }}>
-            📭 {allEntries.length === 0 ? 'Nema unesenih dana' : 'Nema podataka za izabrani filter'}
-          </h3>
-          <p style={{ fontSize: '14px' }}>
-            {allEntries.length === 0 
-              ? 'Klikni na "Unos dana" da dodaš prvi unos' 
-              : 'Promeni filtere da vidiš podatke'
-            }
-          </p>
-        </div>
-      ) : (
-        <div>
-          <div style={{ 
-            marginBottom: '15px', 
-            padding: '15px', 
-            background: '#f8f9fa', 
-            borderRadius: '10px',
-            fontSize: '14px'
-          }}>
-            <strong>Prikazano: {getWeekFiltered().length} od {allEntries.length} unosa</strong>
-            {selectedMonth && (
-              <div style={{ marginTop: '5px' }}>
-                Filter: Mjesec {selectedMonth}
-              </div>
-            )}
-            {selectedWeek && (
-              <div style={{ marginTop: '5px' }}>
-                Nedjelja počinje: {new Date(selectedWeek).toLocaleDateString('sr-RS')}
-              </div>
-            )}
-          </div>
-
-          {getWeekFiltered()
-            .sort((a, b) => parseDate(a.datum) - parseDate(b.datum))
-            .map((entry) => (
-              <div
-                key={entry.id}
-                style={{
-                  marginBottom: 25,
-                  padding: 20,
-                  border: "3px solid #e2e8f0",
-                  borderRadius: 15,
-                  backgroundColor: "#ffffff",
-                  position: "relative",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  overflow: "hidden"
-                }}
-              >
-                {/* RESPONSIVE DUGMAD - RAZLIČITO ZA MOBILE I DESKTOP */}
-                {isMobile ? (
-                  // MOBILE - JEDNO ISPOD DRUGOG
-                  <div>
-                    <h3 style={{ 
-                      color: "#2563eb", 
-                      marginBottom: "15px",
-                      borderBottom: "3px solid #2563eb",
-                      paddingBottom: "12px",
-                      fontSize: "18px",
-                      fontWeight: "bold"
-                    }}>
-                      📆 {entry.datum}
-                    </h3>
-                    
-                    <div style={{ 
-                      display: "flex", 
-                      gap: "10px",
-                      marginBottom: "20px",
-                      flexDirection: "column"
-                    }}>
-                      <button 
-                        onClick={() => handleEdit(entry)}
-                        style={{
-                          background: "#3B82F6",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "12px",
-                          cursor: "pointer",
-                          fontSize: "16px",
-                          fontWeight: "bold"
-                        }}
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(entry.id)}
-                        style={{
-                          background: "#EF4444",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "12px",
-                          cursor: "pointer",
-                          fontSize: "16px",
-                          fontWeight: "bold"
-                        }}
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  // DESKTOP/WINDOWS - JEDNO PORED DRUGOG U REDU SA DATUMOM
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    marginBottom: "20px",
-                    borderBottom: "3px solid #2563eb",
-                    paddingBottom: "15px",
-                    flexWrap: 'wrap',
-                    gap: '15px'
-                  }}>
-                    <h3 style={{ 
-                      color: "#2563eb", 
-                      fontSize: "20px",
-                      fontWeight: "bold",
-                      margin: 0
-                    }}>
-                      📆 {entry.datum}
-                    </h3>
-                    
-                    <div style={{ 
-                      display: "flex", 
-                      gap: "12px",
-                      flexWrap: 'wrap'
-                    }}>
-                      <button 
-                        onClick={() => handleEdit(entry)}
-                        style={{
-                          background: "#3B82F6",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "10px 16px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          fontWeight: "bold",
-                          minWidth: "80px"
-                        }}
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(entry.id)}
-                        style={{
-                          background: "#EF4444",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "10px 16px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          fontWeight: "bold",
-                          minWidth: "80px"
-                        }}
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  </div>
-                )}
-                
-                {/* OSTALI PODACI - ISTI ZA SVE */}
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  gap: '12px', 
-                  marginBottom: '20px' 
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px'
-                  }}>
-                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>🧾 Fiskalni:</span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      color: '#1f2937',
-                      fontSize: isMobile ? '16px' : '18px'
-                    }}>
-                      {format(entry.fiskalni)} €
-                    </span>
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px'
-                  }}>
-                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>💵 Sunmi:</span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      color: '#1f2937',
-                      fontSize: isMobile ? '16px' : '18px'
-                    }}>
-                      {format(entry.sunmi)} €
-                    </span>
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px'
-                  }}>
-                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>📊 Pazar:</span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      color: '#1f2937',
-                      fontSize: isMobile ? '16px' : '18px'
-                    }}>
-                      {format(entry.pazar)} €
-                    </span>
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px'
-                  }}>
-                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>📉 Stvarni pazar:</span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      color: '#1f2937',
-                      fontSize: isMobile ? '16px' : '18px'
-                    }}>
-                      {format(entry.stvarnaUplata)} €
-                    </span>
-                  </div>
-
-                  {/* STANJE KASE */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '14px',
-                    background: '#FFFBEB',
-                    borderRadius: '8px',
-                    border: '2px solid #F59E0B'
-                  }}>
-                    <span style={{ 
-                      fontWeight: 'bold',
-                      fontSize: isMobile ? '15px' : '17px'
-                    }}>
-                      💼 Stanje kase:
-                    </span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      fontSize: isMobile ? '17px' : '19px',
-                      color: '#D97706'
-                    }}>
-                      {format(entry.stanje)} €
-                    </span>
-                  </div>
-
-                  {/* REZULTAT */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px',
-                    background: entry.rezultat >= 0 ? '#f0fdf4' : '#fef2f2',
-                    borderRadius: '10px',
-                    border: `2px solid ${entry.rezultat >= 0 ? '#10B981' : '#EF4444'}`
-                  }}>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      fontSize: isMobile ? '15px' : '17px'
-                    }}>
-                      🧮 Rezultat:
-                    </span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      fontSize: isMobile ? '17px' : '19px',
-                      color: entry.rezultat >= 0 ? '#10B981' : '#EF4444'
-                    }}>
-                      {format(entry.rezultat)} €
-                    </span>
-                  </div>
-
-                  {/* UPLAĆEN PAZAR */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: '#f0fdf4',
-                    borderRadius: '8px',
-                    border: '1px solid #10B981'
-                  }}>
-                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>✅ Uplaćen pazar:</span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      color: '#10B981',
-                      fontSize: isMobile ? '16px' : '18px'
-                    }}>
-                      {format(entry.uplacenPazar)} €
-                    </span>
-                  </div>
-                </div>
-
-                {/* Viza i Fakture */}
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{
-                    fontWeight: 'bold',
-                    fontSize: '16px',
-                    marginBottom: '10px',
-                    color: '#3B82F6'
-                  }}>
-                    🏦 Viza i Fakture:
-                  </div>
-                  <pre style={{ 
-                    background: "#f8f9fa", 
-                    padding: "15px", 
-                    borderRadius: "8px",
-                    border: "2px solid #e2e8f0",
-                    whiteSpace: 'pre-wrap',
-                    margin: '10px 0',
-                    fontSize: '14px',
-                    overflow: 'auto',
-                    maxHeight: '200px'
-                  }}>
-                    {entry.virmanText || 'Nema podataka'}
-                  </pre>
-                  <div style={{ 
-                    textAlign: 'right', 
-                    fontWeight: 'bold', 
-                    color: '#3B82F6',
-                    fontSize: '16px',
-                    marginTop: '10px'
-                  }}>
-                    Ukupno: {format(entry.virmani)} €
-                  </div>
-                </div>
-
-                {/* Rashodi */}
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{
-                    fontWeight: 'bold',
-                    fontSize: '16px',
-                    marginBottom: '10px',
-                    color: '#EF4444'
-                  }}>
-                    💸 Rashodi:
-                  </div>
-                  <pre style={{ 
-                    background: "#fef2f2", 
-                    padding: "15px", 
-                    borderRadius: "8px",
-                    border: "2px solid #fecaca",
-                    whiteSpace: 'pre-wrap',
-                    margin: '10px 0',
-                    fontSize: '14px',
-                    overflow: 'auto',
-                    maxHeight: '200px'
-                  }}>
-                    {entry.rashodiText || 'Nema podataka'}
-                  </pre>
-                  <div style={{ 
-                    textAlign: 'right', 
-                    fontWeight: 'bold', 
-                    color: '#EF4444',
-                    fontSize: '16px',
-                    marginTop: '10px'
-                  }}>
-                    Ukupno: {format(entry.rashodi)} €
-                  </div>
-                </div>
-
-                {/* Keš dobit */}
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{
-                    fontWeight: 'bold',
-                    fontSize: '16px',
-                    marginBottom: '10px',
-                    color: '#10B981'
-                  }}>
-                    💰 Keš dobit:
-                  </div>
-                  <pre style={{ 
-                    background: "#f0fdf4", 
-                    padding: "15px", 
-                    borderRadius: "8px",
-                    border: "2px solid #bbf7d0",
-                    whiteSpace: 'pre-wrap',
-                    margin: '10px 0',
-                    fontSize: '14px',
-                    overflow: 'auto',
-                    maxHeight: '200px'
-                  }}>
-                    {entry.kesDobitText || 'Nema podataka'}
-                  </pre>
-                  <div style={{ 
-                    textAlign: 'right', 
-                    fontWeight: 'bold', 
-                    color: '#10B981',
-                    fontSize: '16px',
-                    marginTop: '10px'
-                  }}>
-                    Ukupno: {format(entry.kesDobit)} €
-                  </div>
-                </div>
-
-                {/* Dodatni podaci */}
-                <div style={{ 
-                  background: '#f8f9fa', 
-                  padding: '15px', 
-                  borderRadius: '10px',
-                  marginTop: '20px'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px'
-                  }}>
-                    <span style={{ fontWeight: 'bold' }}>📦 Početno stanje:</span>
-                    <span style={{ fontWeight: 'bold' }}>{format(entry.pocetnoStanje)} €</span>
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px'
-                  }}>
-                    <span style={{ fontWeight: 'bold' }}>✏️ Korekcija:</span>
-                    <span style={{ fontWeight: 'bold' }}>{format(entry.korekcija)} €</span>
-                  </div>
-                </div>
-
-                {/* Print dugme */}
-                <div style={{ marginTop: "20px" }}>
-                  <button 
-                    onClick={() => printDay(entry)}
-                    style={{
-                      background: "#10B981",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "10px",
-                      padding: "15px",
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                      fontSize: "16px",
-                      width: "100%"
-                    }}
-                  >
-                    🖨️ Štampaj dan
-                  </button>
-                </div>
-              </div>
-            ))}
+          >
+            ❌ Otkaži Edit
+          </button>
         </div>
       )}
-    </div>
+
+      <OcrUpload
+        onExtract={(data) => {
+          if (data.datum) {
+            const parsed = parseDateFromOCR(data.datum);
+            setDan(parsed.dan);
+            setMjesec(parsed.mjesec);
+            setGodina(parsed.godina);
+          }
+          if (data.fiskalni) setFiskalni(data.fiskalni);
+          if (data.sunmi) setSunmi(data.sunmi);
+          if (data.virmanText) setVirmanText(data.virmanText);
+          if (data.rashodiText) setRashodiText(data.rashodiText);
+          if (data.kesDobitText) setKesDobitText(data.kesDobitText);
+        }}
+      />
+
+      <div style={{ marginBottom: '15px' }}>
+        <label>📅 Datum (dan.mjesec.godina):</label>
+        <input 
+          type="date" 
+          value={formatDateForInput(dan, mjesec, godina)} 
+          onChange={(e) => {
+            const date = new Date(e.target.value);
+            if (!isNaN(date.getTime())) {
+              setDan(date.getDate().toString());
+              setMjesec((date.getMonth() + 1).toString());
+              setGodina(date.getFullYear().toString());
+            }
+          }}
+          style={{ width: '100%', padding: '10px', fontSize: '16px' }}
+        />
+        <small style={{ color: '#666' }}>
+          Odaberi datum - automatski će biti formatiran kao dan.mjesec.godina
+        </small>
+      </div>
+
+      <label>🧾 Fiskalni račun:</label>
+      <input type="text" value={fiskalni} onChange={(e) => setFiskalni(e.target.value)} />
+
+      <label>💵 Sunmi (gotovina iz aparata):</label>
+      <input type="text" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
+
+      <label>🏦 Viza i Fakture (npr. +10 viza):</label>
+      <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
+
+      <label>💸 Rashodi (npr. -100 gorivo):</label>
+      <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
+
+      <label>💰 Keš dobit (npr. +200 mirko):</label>
+      <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
+
+      <label>📦 Početno stanje kase:</label>
+      <input type="text" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
+
+      <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
+      <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
+
+      <button type="submit" style={{ marginTop: '15px', padding: '12px 20px', fontSize: '16px' }}>
+        💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}
+      </button>
+    </form>
   );
 }
 
-export default SummaryView;
+export default DayEntry;
