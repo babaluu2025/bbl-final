@@ -14,6 +14,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
+    "build": "CI=false react-scripts build",
+    "build:verbose": "npm run build --verbose"
   },
   "eslintConfig": {
     "extends": [
