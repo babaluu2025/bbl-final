@@ -342,7 +342,7 @@ function App() {
           </button>
         </div>
 
-        {/* Rute */}
+              {/* Rute */}
         <Routes>
           <Route 
             path="/" 
@@ -351,6 +351,7 @@ function App() {
                 onSave={handleSave} 
                 initialData={editingDay}
                 onCancel={editingDay ? handleCancelEdit : null}
+                days={days} // DODAJ OVO - proslijeđuje days podatke
               />
             } 
           />
