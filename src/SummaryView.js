@@ -5,6 +5,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [showMonthlySummary, setShowMonthlySummary] = useState(false);
 
   // Detektuj da li je mobile na osnovu širine ekrana
   useEffect(() => {
@@ -77,6 +78,48 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
 
   const handleEdit = (entry) => {
     onEditDay(entry);
+  };
+
+  // NOVO: Funkcija za mjesečni sumarni pregled
+  const getMonthlySummary = () => {
+    const monthlyData = {};
+    
+    allEntries.forEach(entry => {
+      if (!entry.datum) return;
+      
+      let monthKey = '';
+      if (entry.datum.includes('.')) {
+        const [dan, mjesec, godina] = entry.datum.split('.');
+        monthKey = `${mjesec.padStart(2, '0')}.${godina}`;
+      } else {
+        const date = new Date(entry.datum);
+        monthKey = `${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+      }
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: monthKey,
+          totalRazlika: 0,
+          positiveDays: 0,
+          negativeDays: 0,
+          days: []
+        };
+      }
+      
+      monthlyData[monthKey].totalRazlika += entry.razlikaNaDan || 0;
+      if (entry.razlikaNaDan >= 0) {
+        monthlyData[monthKey].positiveDays++;
+      } else {
+        monthlyData[monthKey].negativeDays++;
+      }
+      monthlyData[monthKey].days.push(entry);
+    });
+    
+    return Object.values(monthlyData).sort((a, b) => {
+      const [aMonth, aYear] = a.month.split('.');
+      const [bMonth, bYear] = b.month.split('.');
+      return new Date(`${aYear}-${aMonth}`) - new Date(`${bYear}-${bMonth}`);
+    });
   };
 
   const printDay = (entry) => {
@@ -164,7 +207,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             <p>🧾 Fiskalni računi: <span class="value">${format(entry.fiskalni)} €</span></p>
             <p>💵 Sunmi (gotovina): <span class="value">${format(entry.sunmi)} €</span></p>
             <p>📊 Ukupan pazar: <span class="value">${format(entry.pazar)} €</span></p>
-            <p>📉 Stvarni pazar za uplatu: <span class="value">${format(entry.stvarnaUplata)} €</span></p>
+            <p>💰 KES NA DAN: <span class="value">${format(entry.kesNaDan)} €</span></p>
           </div>
 
           <div class="section">
@@ -187,10 +230,10 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
 
           <div class="section">
             <div class="section-title">🧮 Rezultat i stanje kase:</div>
-            <p>Rezultat dana: <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${format(entry.rezultat)} €</span></p>
+            <p>📈 Razlika na dan: <span class="value ${entry.razlikaNaDan >= 0 ? 'positive' : 'negative'}">${format(entry.razlikaNaDan)} €</span></p>
             <p>Početno stanje kase: <span class="value">${format(entry.pocetnoStanje)} €</span></p>
             <p>Korekcija: <span class="value">${format(entry.korekcija)} €</span></p>
-            <p class="total">Stanje kase: <span class="value">${format(entry.stanje)} €</span></p>
+            <p class="total">💼 Novo stanje kase: <span class="value">${format(entry.novoStanjeKase)} €</span></p>
             <p class="total">Uplaćen pazar: <span class="value">${format(entry.uplacenPazar)} €</span></p>
           </div>
 
@@ -210,6 +253,8 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
     newWindow.document.write(html);
     newWindow.document.close();
   };
+
+  const monthlySummary = getMonthlySummary();
 
   return (
     <div style={{ 
@@ -232,6 +277,133 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
       }}>
         Ukupno unosa: {allEntries.length}
       </p>
+
+      {/* NOVO: Dugme za mjesečni pregled */}
+      <div style={{ 
+        marginBottom: '20px', 
+        textAlign: 'center'
+      }}>
+        <button 
+          onClick={() => setShowMonthlySummary(!showMonthlySummary)}
+          style={{
+            background: showMonthlySummary ? '#EF4444' : '#10B981',
+            color: 'white',
+            border: 'none',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          {showMonthlySummary ? '📅 Zatvori Mjesečni Pregled' : '📊 Pregled Mjesečnih Rezultata'}
+        </button>
+      </div>
+
+      {/* NOVO: Mjesečni sumarni pregled */}
+      {showMonthlySummary && (
+        <div style={{
+          marginBottom: '30px',
+          padding: '20px',
+          background: '#f8f9fa',
+          borderRadius: '12px',
+          border: '2px solid #e2e8f0'
+        }}>
+          <h3 style={{
+            textAlign: 'center',
+            color: '#2563eb',
+            marginBottom: '20px',
+            fontSize: '18px'
+          }}>
+            📈 Mjesečni Sumarni Pregled
+          </h3>
+          
+          {monthlySummary.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#666' }}>
+              Nema podataka za prikaz
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {monthlySummary.map(month => (
+                <div key={month.month} style={{
+                  padding: '15px',
+                  background: 'white',
+                  borderRadius: '8px',
+                  border: `2px solid ${month.totalRazlika >= 0 ? '#10B981' : '#EF4444'}`
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '10px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <h4 style={{ 
+                      margin: 0, 
+                      color: '#1f2937',
+                      fontSize: '16px'
+                    }}>
+                      🗓️ Mjesec: {month.month}
+                    </h4>
+                    <span style={{
+                      fontWeight: 'bold',
+                      fontSize: '18px',
+                      color: month.totalRazlika >= 0 ? '#10B981' : '#EF4444'
+                    }}>
+                      {format(month.totalRazlika)} €
+                    </span>
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '14px',
+                    color: '#666'
+                  }}>
+                    <span>✅ Plus dana: {month.positiveDays}</span>
+                    <span>❌ Minus dana: {month.negativeDays}</span>
+                    <span>📊 Ukupno dana: {month.days.length}</span>
+                  </div>
+                  
+                  {/* Detalji po danima */}
+                  <div style={{ marginTop: '10px' }}>
+                    <details>
+                      <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                        📋 Pregled po danima ({month.days.length})
+                      </summary>
+                      <div style={{ marginTop: '10px' }}>
+                        {month.days
+                          .sort((a, b) => parseDate(a.datum) - parseDate(b.datum))
+                          .map(day => (
+                            <div key={day.id} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '8px',
+                              margin: '5px 0',
+                              background: '#f8f9fa',
+                              borderRadius: '6px',
+                              borderLeft: `4px solid ${day.razlikaNaDan >= 0 ? '#10B981' : '#EF4444'}`
+                            }}>
+                              <span style={{ fontSize: '14px' }}>{day.datum}</span>
+                              <span style={{
+                                fontWeight: 'bold',
+                                color: day.razlikaNaDan >= 0 ? '#10B981' : '#EF4444',
+                                fontSize: '14px'
+                              }}>
+                                {format(day.razlikaNaDan)} €
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filteri */}
       <div style={{ 
@@ -531,25 +703,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </span>
                   </div>
 
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px'
-                  }}>
-                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>📉 Stvarni pazar:</span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      color: '#1f2937',
-                      fontSize: isMobile ? '16px' : '18px'
-                    }}>
-                      {format(entry.stvarnaUplata)} €
-                    </span>
-                  </div>
-
-                  {/* STANJE KASE */}
+                  {/* KES NA DAN - PREIMENOVANO */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -563,39 +717,64 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                       fontWeight: 'bold',
                       fontSize: isMobile ? '15px' : '17px'
                     }}>
-                      💼 Stanje kase:
+                      💰 KES NA DAN:
                     </span>
                     <span style={{ 
                       fontWeight: 'bold', 
                       fontSize: isMobile ? '17px' : '19px',
                       color: '#D97706'
                     }}>
-                      {format(entry.stanje)} €
+                      {format(entry.kesNaDan)} €
                     </span>
                   </div>
 
-                  {/* REZULTAT */}
+                  {/* RAZLIKA NA DAN - PREIMENOVANO */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '16px',
-                    background: entry.rezultat >= 0 ? '#f0fdf4' : '#fef2f2',
+                    background: entry.razlikaNaDan >= 0 ? '#f0fdf4' : '#fef2f2',
                     borderRadius: '10px',
-                    border: `2px solid ${entry.rezultat >= 0 ? '#10B981' : '#EF4444'}`
+                    border: `2px solid ${entry.razlikaNaDan >= 0 ? '#10B981' : '#EF4444'}`
                   }}>
                     <span style={{ 
                       fontWeight: 'bold', 
                       fontSize: isMobile ? '15px' : '17px'
                     }}>
-                      🧮 Rezultat:
+                      📈 Razlika na dan:
                     </span>
                     <span style={{ 
                       fontWeight: 'bold', 
                       fontSize: isMobile ? '17px' : '19px',
-                      color: entry.rezultat >= 0 ? '#10B981' : '#EF4444'
+                      color: entry.razlikaNaDan >= 0 ? '#10B981' : '#EF4444'
                     }}>
-                      {format(entry.rezultat)} €
+                      {format(entry.razlikaNaDan)} €
+                    </span>
+                  </div>
+
+                  {/* NOVO STANJE KASE - PREIMENOVANO */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '14px',
+                    background: '#EFF6FF',
+                    borderRadius: '8px',
+                    border: '2px solid #3B82F6'
+                  }}>
+                    <span style={{ 
+                      fontWeight: 'bold',
+                      fontSize: isMobile ? '15px' : '17px'
+                    }}>
+                      💼 Novo stanje kase:
+                    </span>
+                    <span style={{ 
+                      fontWeight: 'bold', 
+                      fontSize: isMobile ? '17px' : '19px',
+                      color: '#2563eb'
+                    }}>
+                      {format(entry.novoStanjeKase)} €
                     </span>
                   </div>
 
