@@ -38,20 +38,23 @@ function DayEntry({ onSave, initialData, onCancel, days }) { // DODAJ days prop
     return { dan: '', mjesec: '', godina: '' };
   };
 
-  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE
+  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE - ISPRAVLJENA
   const getPreviousDayCashState = () => {
     if (!days || days.length === 0) return 0;
     
-    // Sortiraj dane po datumu (najnoviji prvi)
-    const sortedDays = [...days].sort((a, b) => {
-      const dateA = parseDate(a.datum);
-      const dateB = parseDate(b.datum);
-      return dateB - dateA;
+    // Pronađi najnoviji datum (najveći datum)
+    let latestDate = new Date(0);
+    let latestDay = null;
+    
+    days.forEach(day => {
+      const dayDate = parseDate(day.datum);
+      if (dayDate > latestDate) {
+        latestDate = dayDate;
+        latestDay = day;
+      }
     });
     
-    // Uzmi stanje iz posljednjeg dana
-    const lastDay = sortedDays[0];
-    return lastDay.stanje || 0;
+    return latestDay?.stanje || 0;
   };
 
   // Pomoćna funkcija za parsiranje datuma
@@ -204,7 +207,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) { // DODAJ days prop
           <strong>💡 Automatski prenos stanja:</strong> 
           <br />
           Početno stanje kase je automatski postavljeno na <strong>{getPreviousDayCashState().toFixed(2)} €</strong> 
-          (stanje iz posljednjeg dana: {days[days.length - 1]?.datum})
+          (stanje iz posljednjeg dana)
         </div>
       )}
 
