@@ -11,9 +11,7 @@ import {
   manualBackup,
   showSyncStatus,
   getAuthStatus,
-  logout,
-  repairAuth,
-  autoSyncIfLoggedIn
+  logout
 } from "./googleDrive";
 
 function App() {
@@ -22,21 +20,19 @@ function App() {
   const [userEmail, setUserEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
-  const [authStatus, setAuthStatus] = useState({
-    isLoggedIn: false,
-    userEmail: '',
-    tokenExpired: false
-  });
+  const [hasLocalData, setHasLocalData] = useState(false);
 
   // Učitaj lokalne podatke pri startu
   useEffect(() => {
     const localDays = localStorage.getItem('bbl_days');
     if (localDays) {
-      setDays(JSON.parse(localDays));
+      const parsedDays = JSON.parse(localDays);
+      setDays(parsedDays);
+      setHasLocalData(parsedDays.length > 0);
     }
   }, []);
 
-  // Provera autentifikacije pri učitavanju
+  // Provera autentifikacije pri učitavanju - BEZ AUTOMATSKOG UČITAVANJA
   useEffect(() => {
     const initAuth = async () => {
       if (checkRedirectAuth()) {
@@ -44,44 +40,50 @@ function App() {
           const userInfo = await getUserInfo();
           setUserEmail(userInfo.email);
           setIsLoggedIn(true);
-          const newAuthStatus = getAuthStatus();
-          setAuthStatus(newAuthStatus);
           showSyncStatus("✅ Uspešno prijavljen!", "success");
           
-          // Automatski učitaj podatke nakon prijave
-          loadDataFromDrive();
+          // NE UČITAVAJ AUTOMATSKI - samo prijavi korisnika
+          // loadDataFromDrive(); // OVO JE IZBRIŠANO
+          
         } catch (error) {
           console.error("Greška pri prijavi:", error);
           showSyncStatus("❌ Greška pri prijavi", "error");
-          updateAuthStatus();
         }
       } else {
-        updateAuthStatus();
-        if (getAuthStatus().isLoggedIn) {
-          loadDataFromDrive();
-        }
+        const authStatus = getAuthStatus();
+        setIsLoggedIn(authStatus.isLoggedIn);
+        setUserEmail(authStatus.userEmail);
+        // NE UČITAVAJ AUTOMATSKI NI OVDE
       }
     };
 
     initAuth();
   }, []);
 
-  // Ažuriraj auth status
-  const updateAuthStatus = () => {
-    const status = getAuthStatus();
-    setAuthStatus(status);
-    setIsLoggedIn(status.isLoggedIn);
-    setUserEmail(status.userEmail);
-  };
-
-  // Učitavanje podataka sa Drive-a
+  // Učitavanje podataka sa Drive-a - SAMO NA ZAHTEV
   const loadDataFromDrive = async () => {
+    // UPIT ZA POTVRDU PRVO
+    if (hasLocalData && days.length > 0) {
+      const confirmLoad = window.confirm(
+        "🚨 PAŽNJA! 🚨\n\n" +
+        "Imate lokalno sačuvane podatke.\n" +
+        "Učitavanje sa Drive-a će ZAMENITI vaše trenutne podatke.\n\n" +
+        "Da li želite da nastavite?"
+      );
+      
+      if (!confirmLoad) {
+        showSyncStatus("❌ Učitavanje otkazano", "info");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const driveData = await loadFromDrive();
-      if (driveData) {
+      if (driveData && driveData.length > 0) {
         setDays(driveData);
         localStorage.setItem('bbl_days', JSON.stringify(driveData));
+        setHasLocalData(false);
         showSyncStatus("✅ Podaci uspešno učitani sa Drive-a", "success");
       } else {
         showSyncStatus("ℹ️ Nema podataka na Drive-u", "info");
@@ -94,18 +96,35 @@ function App() {
     }
   };
 
-  // Čuvanje novog dana
+  // Snimanje podataka na Drive - SAMO NA ZAHTEV
+  const saveDataToDrive = async () => {
+    if (days.length === 0) {
+      showSyncStatus("ℹ️ Nema podataka za čuvanje", "info");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await saveToDrive(days);
+      showSyncStatus("✅ Podaci uspešno sačuvani na Drive", "success");
+    } catch (error) {
+      console.error("Greška pri čuvanju na Drive:", error);
+      showSyncStatus("❌ Greška pri čuvanju na Drive", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Čuvanje novog dana - SAMO LOKALNO
   const handleSave = async (dan) => {
     let newDays;
 
     if (editingDay) {
-      // EDIT MODE: Ažuriraj postojeći dan
       newDays = days.map(day => 
         day.id === editingDay.id ? { ...dan, id: editingDay.id } : day
       );
       setEditingDay(null);
     } else {
-      // NEW MODE: Dodaj novi dan
       const newDay = { 
         ...dan, 
         id: Date.now().toString(),
@@ -116,43 +135,25 @@ function App() {
 
     setDays(newDays);
     localStorage.setItem('bbl_days', JSON.stringify(newDays));
+    setHasLocalData(true);
     
-    // AUTOMATSKI SYNC AKO JE PRIJAVLJEN
-    try {
-      const syncSuccess = await autoSyncIfLoggedIn(newDays);
-      if (syncSuccess) {
-        showSyncStatus(editingDay ? "✅ Dan ažuriran i sinhronizovan" : "✅ Dan sačuvan i sinhronizovan", "success");
-      } else {
-        showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "info");
-      }
-    } catch (error) {
-      console.error("Greška pri sinhronizaciji:", error);
-      showSyncStatus("⚠️ Podaci sačuvani lokalno", "warning");
-    }
+    showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "success");
   };
 
-  // Brisanje dana
+  // Brisanje dana - SAMO LOKALNO
   const handleDeleteDay = async (dayId) => {
     const newDays = days.filter(day => day.id !== dayId);
     setDays(newDays);
     localStorage.setItem('bbl_days', JSON.stringify(newDays));
+    setHasLocalData(newDays.length > 0);
     
-    try {
-      const syncSuccess = await autoSyncIfLoggedIn(newDays);
-      if (syncSuccess) {
-        showSyncStatus("✅ Dan obrisan i sinhronizovan", "success");
-      } else {
-        showSyncStatus("✅ Dan obrisan lokalno", "info");
-      }
-    } catch (error) {
-      console.error("Greška pri brisanju sa Drive:", error);
-      showSyncStatus("⚠️ Dan obrisan lokalno (greška pri sinhronizaciji)", "warning");
-    }
+    showSyncStatus("✅ Dan obrisan lokalno", "success");
   };
 
   // Edit dana
   const handleEditDay = (day) => {
     setEditingDay(day);
+    window.history.pushState({}, '', '/');
   };
 
   // Otkazivanje edit mode
@@ -168,24 +169,9 @@ function App() {
   // Google logout
   const handleLogout = () => {
     logout();
-    updateAuthStatus();
+    setIsLoggedIn(false);
+    setUserEmail('');
     showSyncStatus("✅ Uspešno odjavljen", "success");
-  };
-
-  // Ručni backup
-  const handleManualBackup = () => {
-    manualBackup(days);
-  };
-
-  // Popravi auth
-  const handleRepairAuth = () => {
-    if (repairAuth()) {
-      updateAuthStatus();
-      // Nakon čišćenja, pokušaj ponovo login
-      setTimeout(() => {
-        handleLogin();
-      }, 1000);
-    }
   };
 
   return (
@@ -197,92 +183,125 @@ function App() {
         <div style={{ 
           marginBottom: "20px", 
           padding: "15px", 
-          background: authStatus.isLoggedIn ? "#10B98120" : "#EF444420",
-          border: `2px solid ${authStatus.isLoggedIn ? "#10B981" : "#EF4444"}`,
-          borderRadius: "8px"
+          background: isLoggedIn ? "#10B98120" : "#EF444420",
+          border: `2px solid ${isLoggedIn ? "#10B981" : "#EF4444"}`,
+          borderRadius: "10px"
         }}>
-          {authStatus.isLoggedIn ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>✅ Prijavljen:</span> {userEmail}
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                {authStatus.tokenExpired && (
-                  <button 
-                    onClick={handleRepairAuth}
-                    style={{ 
-                      background: "#EF4444", 
-                      color: "white", 
-                      border: "none", 
-                      padding: "8px 12px", 
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    🛠️ Popravi Login
-                  </button>
-                )}
+          {isLoggedIn ? (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 'bold' }}>✅ Prijavljen: {userEmail}</span>
                 <button 
                   onClick={handleLogout}
                   style={{ 
-                    background: "#6B7280", 
+                    background: "#EF4444", 
                     color: "white", 
                     border: "none", 
-                    padding: "8px 12px", 
-                    borderRadius: "4px",
-                    cursor: "pointer"
+                    padding: "8px 15px", 
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 'bold'
                   }}
                 >
                   Odjavi se
                 </button>
               </div>
+              
+              {/* GOOGLE DRIVE AKCIJE - SAMO NA ZAHTEV */}
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={loadDataFromDrive}
+                  disabled={loading}
+                  style={{ 
+                    background: "#3B82F6", 
+                    color: "white", 
+                    border: "none", 
+                    padding: "8px 15px", 
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 'bold',
+                    flex: 1
+                  }}
+                >
+                  {loading ? "⏳ Učitavam..." : "📂 Učitaj sa Drive"}
+                </button>
+                
+                <button 
+                  onClick={saveDataToDrive}
+                  disabled={loading || days.length === 0}
+                  style={{ 
+                    background: "#10B981", 
+                    color: "white", 
+                    border: "none", 
+                    padding: "8px 15px", 
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 'bold',
+                    flex: 1
+                  }}
+                >
+                  {loading ? "⏳ Čuvam..." : "💾 Sačuvaj na Drive"}
+                </button>
+              </div>
+              
+              {hasLocalData && (
+                <div style={{ 
+                  marginTop: '10px', 
+                  padding: '10px', 
+                  background: '#FFFBEB',
+                  border: '1px solid #F59E0B',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}>
+                  ⚠️ <strong>Imate lokalne podatke</strong> - koristite dugmad iznad za sinhronizaciju
+                </div>
+              )}
             </div>
           ) : (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <span style={{ fontWeight: 'bold' }}>🔐 Niste prijavljeni</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold' }}>🔐 Niste prijavljeni na Google Drive</span>
               <button 
                 onClick={handleLogin}
                 style={{ 
                   background: "#10B981", 
                   color: "white", 
                   border: "none", 
-                  padding: "8px 12px", 
-                  borderRadius: "4px",
+                  padding: "8px 15px", 
+                  borderRadius: "6px",
                   cursor: "pointer",
                   fontWeight: 'bold'
                 }}
               >
-                🔑 Prijavi se sa Google
+                Prijavi se sa Google
               </button>
             </div>
           )}
         </div>
 
-        {/* Navigacija i akcije */}
+        {/* Navigacija */}
         <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <Link to="/">
             <button style={{ 
-              background: "#2563eb", 
-              color: "white", 
-              border: "none", 
-              padding: "10px 15px", 
-              borderRadius: "6px",
-              cursor: "pointer",
+              marginRight: "10px",
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              cursor: 'pointer',
               fontWeight: 'bold'
             }}>
               {editingDay ? "✏️ Edit Dan" : "📝 Unos dana"}
             </button>
           </Link>
-          
           <Link to="/summary">
             <button style={{ 
-              background: "#8B5CF6", 
-              color: "white", 
-              border: "none", 
-              padding: "10px 15px", 
-              borderRadius: "6px",
-              cursor: "pointer",
+              background: '#8B5CF6',
+              color: 'white',
+              border: 'none',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              cursor: 'pointer',
               fontWeight: 'bold'
             }}>
               📂 Sumarni pregled
@@ -296,8 +315,8 @@ function App() {
                 background: "#6B7280", 
                 color: "white", 
                 border: "none", 
-                padding: "10px 15px", 
-                borderRadius: "6px", 
+                padding: "12px 20px", 
+                borderRadius: "8px", 
                 cursor: "pointer",
                 fontWeight: 'bold'
               }}
@@ -306,41 +325,21 @@ function App() {
             </button>
           )}
           
-          {authStatus.isLoggedIn && (
-            <>
-              <button 
-                onClick={loadDataFromDrive}
-                disabled={loading}
-                style={{ 
-                  background: "#3B82F6", 
-                  color: "white", 
-                  border: "none", 
-                  padding: "10px 15px", 
-                  borderRadius: "6px", 
-                  cursor: "pointer",
-                  fontWeight: 'bold',
-                  opacity: loading ? 0.6 : 1
-                }}
-              >
-                {loading ? "⏳ Učitavam..." : "🔄 Učitaj sa Drive"}
-              </button>
-              
-              <button 
-                onClick={handleManualBackup}
-                style={{ 
-                  background: "#F59E0B", 
-                  color: "white", 
-                  border: "none", 
-                  padding: "10px 15px", 
-                  borderRadius: "6px", 
-                  cursor: "pointer",
-                  fontWeight: 'bold'
-                }}
-              >
-                📋 Ručni Backup
-              </button>
-            </>
-          )}
+          {/* RUČNI BACKUP - UVIJEK DOSTUPAN */}
+          <button 
+            onClick={() => manualBackup(days)}
+            style={{ 
+              background: "#F59E0B", 
+              color: "white", 
+              border: "none", 
+              padding: "12px 20px", 
+              borderRadius: "8px", 
+              cursor: "pointer",
+              fontWeight: 'bold'
+            }}
+          >
+            📋 Ručni Backup
+          </button>
         </div>
 
         {/* Rute */}
