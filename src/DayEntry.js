@@ -38,23 +38,21 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     return { dan: '', mjesec: '', godina: '' };
   };
 
-  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE - ISPRAVLJENA
+  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE
   const getPreviousDayCashState = () => {
     if (!days || days.length === 0) return 0;
     
-    // Pronađi najnoviji datum (najveći datum)
-    let latestDate = new Date(0);
-    let latestDay = null;
-    
-    days.forEach(day => {
-      const dayDate = parseDate(day.datum);
-      if (dayDate > latestDate) {
-        latestDate = dayDate;
-        latestDay = day;
-      }
+    // Sortiraj dane po datumu (najnoviji prvi)
+    const sortedDays = [...days].sort((a, b) => {
+      const dateA = new Date(a.datum.split('.').reverse().join('-'));
+      const dateB = new Date(b.datum.split('.').reverse().join('-'));
+      return dateB - dateA;
     });
     
-    return latestDay?.stanje || 0;
+    // Uzmi stanje iz najnovijeg dana
+    const lastDay = sortedDays[0];
+    console.log("Poslednji dan:", lastDay.datum, "Stanje:", lastDay.stanje);
+    return lastDay.stanje || 0;
   };
 
   // Pomoćna funkcija za parsiranje datuma
@@ -67,7 +65,6 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     return new Date(dateStr);
   };
 
-  // EFIKASNIJI useEffect KOJI PRATI PROMJENE U days
   useEffect(() => {
     if (initialData) {
       // EDIT MODE - koristi postojeće vrijednosti
@@ -94,18 +91,10 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       
       // AUTOMATSKO POSTAVLJANJE POČETNOG STANJA IZ PRETHODNOG DANA
       const previousCashState = getPreviousDayCashState();
-      setPocetnoStanje(previousCashState.toString());
+      console.log("Automatsko stanje iz prethodnog dana:", previousCashState);
+      setPocetnoStanje(previousCashState > 0 ? previousCashState.toString() : '');
     }
-  }, [initialData]); // Uklonili smo days iz dependency array
-
-  // NOVI useEffect KOJI ĆE PRATITI PROMJENE U days I AŽURIRATI POČETNO STANJE
-  useEffect(() => {
-    if (!initialData && days && days.length > 0) {
-      // Samo za NOVI DAN (ne u edit mode) ažuriraj početno stanje kada se days promijeni
-      const previousCashState = getPreviousDayCashState();
-      setPocetnoStanje(previousCashState.toString());
-    }
-  }, [days, initialData]); // Pratimo promjene u days
+  }, [initialData, days]);
 
   const parseLines = (text, forcePositive = false) => {
     return text
@@ -137,11 +126,17 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
-    const stvarnaUplata = round(fisk - virmani);
+    // ISPRAVLJENE KALKULACIJE PREMA ŠEMI
+    const pazar = round(fisk + sun);
+    const stvarnaUplata = round(pazar - virmani);
     const rezultat = round(sun + kesDobit - rashodi);
     const stanje = round(pocStanje + rezultat + korek);
-    const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
-    const pazar = round(fisk + sun);
+    const uplacenPazar = round(pazar - virmani - rashodi + kesDobit);
+
+    console.log("Kalkulacije:", {
+      fisk, sun, virmani, rashodi, kesDobit, pocStanje, korek,
+      pazar, stvarnaUplata, rezultat, stanje, uplacenPazar
+    });
 
     const danObj = {
       datum: formattedDatum,
@@ -216,6 +211,8 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
           <br />
           Početno stanje kase je automatski postavljeno na <strong>{getPreviousDayCashState().toFixed(2)} €</strong> 
           (stanje iz posljednjeg dana)
+          <br />
+          <small>Ukupno dana u sistemu: {days.length}</small>
         </div>
       )}
 
