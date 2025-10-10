@@ -1,204 +1,372 @@
-import React, { useState, useEffect } from 'react';
-import DayEntry from './components/DayEntry';
-import SummaryView from './components/SummaryView';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import DayEntry from "./DayEntry";
+import SummaryView from "./SummaryView";
+import { 
+  handleAuthClick, 
+  checkRedirectAuth, 
+  getUserInfo, 
+  saveToDrive, 
+  loadFromDrive,
+  manualBackup,
+  showSyncStatus,
+  getAuthStatus,
+  logout
+} from "./googleDrive";
 
 function App() {
   const [days, setDays] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [loading, setLoading] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
-  const [activeTab, setActiveTab] = useState('unos');
+  const [hasLocalData, setHasLocalData] = useState(false);
 
-  // Učitavanje podataka iz localStorage
+  // Učitaj lokalne podatke pri startu
   useEffect(() => {
-    const savedDays = localStorage.getItem('bblBillingDays');
-    if (savedDays) {
-      try {
-        const parsedDays = JSON.parse(savedDays);
-        setDays(Array.isArray(parsedDays) ? parsedDays : []);
-      } catch (error) {
-        console.error('Greška pri učitavanju podataka:', error);
-        setDays([]);
-      }
+    const localDays = localStorage.getItem('bbl_days');
+    if (localDays) {
+      const parsedDays = JSON.parse(localDays);
+      setDays(parsedDays);
+      setHasLocalData(parsedDays.length > 0);
     }
   }, []);
 
-  // Čuvanje podataka u localStorage
+  // Provera autentifikacije pri učitavanju - BEZ AUTOMATSKOG UČITAVANJA
   useEffect(() => {
-    localStorage.setItem('bblBillingDays', JSON.stringify(days));
-  }, [days]);
+    const initAuth = async () => {
+      if (checkRedirectAuth()) {
+        try {
+          const userInfo = await getUserInfo();
+          setUserEmail(userInfo.email);
+          setIsLoggedIn(true);
+          showSyncStatus("✅ Uspešno prijavljen!", "success");
+          
+          // NE UČITAVAJ AUTOMATSKI - samo prijavi korisnika
+          // loadDataFromDrive(); // OVO JE IZBRIŠANO
+          
+        } catch (error) {
+          console.error("Greška pri prijavi:", error);
+          showSyncStatus("❌ Greška pri prijavi", "error");
+        }
+      } else {
+        const authStatus = getAuthStatus();
+        setIsLoggedIn(authStatus.isLoggedIn);
+        setUserEmail(authStatus.userEmail);
+        // NE UČITAVAJ AUTOMATSKI NI OVDE
+      }
+    };
 
-  // Funkcija za automatsko prenošenje stanja kase na sledeći dan
-  const getNextDayStartingBalance = () => {
-    if (days.length === 0) return '';
-    
-    const sortedDays = [...days].sort((a, b) => {
-      const dateA = parseDate(a.datum);
-      const dateB = parseDate(b.datum);
-      return dateB - dateA;
-    });
-    
-    const latestDay = sortedDays[0];
-    return latestDay?.novoStanjeKase ? latestDay.novoStanjeKase.toString() : '';
-  };
+    initAuth();
+  }, []);
 
-  const parseDate = (dateStr) => {
-    if (!dateStr) return new Date(0);
-    if (dateStr.includes('.')) {
-      const [dan, mjesec, godina] = dateStr.split('.');
-      return new Date(`${godina}-${mjesec.padStart(2, '0')}-${dan.padStart(2, '0')}`);
+  // Učitavanje podataka sa Drive-a - SAMO NA ZAHTEV
+  const loadDataFromDrive = async () => {
+    // UPIT ZA POTVRDU PRVO
+    if (hasLocalData && days.length > 0) {
+      const confirmLoad = window.confirm(
+        "🚨 PAŽNJA! 🚨\n\n" +
+        "Imate lokalno sačuvane podatke.\n" +
+        "Učitavanje sa Drive-a će ZAMENITI vaše trenutne podatke.\n\n" +
+        "Da li želite da nastavite?"
+      );
+      
+      if (!confirmLoad) {
+        showSyncStatus("❌ Učitavanje otkazano", "info");
+        return;
+      }
     }
-    return new Date(dateStr);
+
+    setLoading(true);
+    try {
+      const driveData = await loadFromDrive();
+      if (driveData && driveData.length > 0) {
+        setDays(driveData);
+        localStorage.setItem('bbl_days', JSON.stringify(driveData));
+        setHasLocalData(false);
+        showSyncStatus("✅ Podaci uspešno učitani sa Drive-a", "success");
+      } else {
+        showSyncStatus("ℹ️ Nema podataka na Drive-u", "info");
+      }
+    } catch (error) {
+      console.error("Greška pri učitavanju podataka:", error);
+      showSyncStatus("❌ Greška pri učitavanju sa Drive-a", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSaveDay = (dayData) => {
+  // Snimanje podataka na Drive - SAMO NA ZAHTEV
+  const saveDataToDrive = async () => {
+    if (days.length === 0) {
+      showSyncStatus("ℹ️ Nema podataka za čuvanje", "info");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await saveToDrive(days);
+      showSyncStatus("✅ Podaci uspešno sačuvani na Drive", "success");
+    } catch (error) {
+      console.error("Greška pri čuvanju na Drive:", error);
+      showSyncStatus("❌ Greška pri čuvanju na Drive", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Čuvanje novog dana - SAMO LOKALNO
+  const handleSave = async (dan) => {
+    let newDays;
+
     if (editingDay) {
-      // Edit mode
-      setDays(prev => prev.map(day => 
-        day.id === editingDay.id 
-          ? { ...dayData, id: editingDay.id }
-          : day
-      ));
+      newDays = days.map(day => 
+        day.id === editingDay.id ? { ...dan, id: editingDay.id } : day
+      );
       setEditingDay(null);
     } else {
-      // New day
-      const newDay = {
-        ...dayData,
+      const newDay = { 
+        ...dan, 
         id: Date.now().toString(),
-        datum: dayData.datum || new Date().toLocaleDateString('sr-RS')
+        createdAt: new Date().toISOString()
       };
-      setDays(prev => [...prev, newDay]);
+      newDays = [...days, newDay];
     }
-    setActiveTab('pregled');
+
+    setDays(newDays);
+    localStorage.setItem('bbl_days', JSON.stringify(newDays));
+    setHasLocalData(true);
+    
+    showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "success");
   };
 
+  // Brisanje dana - SAMO LOKALNO
+  const handleDeleteDay = async (dayId) => {
+    const newDays = days.filter(day => day.id !== dayId);
+    setDays(newDays);
+    localStorage.setItem('bbl_days', JSON.stringify(newDays));
+    setHasLocalData(newDays.length > 0);
+    
+    showSyncStatus("✅ Dan obrisan lokalno", "success");
+  };
+
+  // Edit dana
   const handleEditDay = (day) => {
     setEditingDay(day);
-    setActiveTab('unos');
+    window.history.pushState({}, '', '/');
   };
 
-  const handleDeleteDay = (dayId) => {
-    setDays(prev => prev.filter(day => day.id !== dayId));
-  };
-
+  // Otkazivanje edit mode
   const handleCancelEdit = () => {
     setEditingDay(null);
   };
 
-  return (
-    <div className="App">
-      <header style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '20px',
-        textAlign: 'center',
-        marginBottom: '20px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-      }}>
-        <h1 style={{ 
-          margin: 0, 
-          fontSize: '28px',
-          fontWeight: 'bold'
-        }}>
-          💰 BBL Billing - Menadžer Kase
-        </h1>
-        <p style={{ 
-          margin: '10px 0 0 0',
-          fontSize: '16px',
-          opacity: 0.9
-        }}>
-          Upravljajte dnevnim pazarom i stanjem kase
-        </p>
-      </header>
+  // Google login
+  const handleLogin = () => {
+    handleAuthClick();
+  };
 
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '0 20px'
-      }}>
-        {/* Tab Navigation */}
-        <div style={{
-          display: 'flex',
-          marginBottom: '20px',
-          borderBottom: '2px solid #e2e8f0',
-          background: 'white',
-          borderRadius: '10px 10px 0 0',
-          overflow: 'hidden'
+  // Google logout
+  const handleLogout = () => {
+    logout();
+    setIsLoggedIn(false);
+    setUserEmail('');
+    showSyncStatus("✅ Uspešno odjavljen", "success");
+  };
+
+  return (
+    <Router>
+      <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
+        <h1>📘 BBL Billing App {editingDay && " - ✏️ Edit Mode"}</h1>
+
+        {/* Status bar */}
+        <div style={{ 
+          marginBottom: "20px", 
+          padding: "15px", 
+          background: isLoggedIn ? "#10B98120" : "#EF444420",
+          border: `2px solid ${isLoggedIn ? "#10B981" : "#EF4444"}`,
+          borderRadius: "10px"
         }}>
-          <button
-            onClick={() => setActiveTab('unos')}
-            style={{
-              flex: 1,
-              padding: '15px 20px',
-              border: 'none',
-              background: activeTab === 'unos' ? '#3B82F6' : '#f8f9fa',
-              color: activeTab === 'unos' ? 'white' : '#666',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            {editingDay ? '✏️ Izmena Dana' : '📝 Unos Novog Dana'}
-          </button>
-          <button
-            onClick={() => setActiveTab('pregled')}
-            style={{
-              flex: 1,
-              padding: '15px 20px',
-              border: 'none',
-              background: activeTab === 'pregled' ? '#10B981' : '#f8f9fa',
-              color: activeTab === 'pregled' ? 'white' : '#666',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            📊 Pregled Svih Dana ({days.length})
-          </button>
+          {isLoggedIn ? (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 'bold' }}>✅ Prijavljen: {userEmail}</span>
+                <button 
+                  onClick={handleLogout}
+                  style={{ 
+                    background: "#EF4444", 
+                    color: "white", 
+                    border: "none", 
+                    padding: "8px 15px", 
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Odjavi se
+                </button>
+              </div>
+              
+              {/* GOOGLE DRIVE AKCIJE - SAMO NA ZAHTEV */}
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={loadDataFromDrive}
+                  disabled={loading}
+                  style={{ 
+                    background: "#3B82F6", 
+                    color: "white", 
+                    border: "none", 
+                    padding: "8px 15px", 
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 'bold',
+                    flex: 1
+                  }}
+                >
+                  {loading ? "⏳ Učitavam..." : "📂 Učitaj sa Drive"}
+                </button>
+                
+                <button 
+                  onClick={saveDataToDrive}
+                  disabled={loading || days.length === 0}
+                  style={{ 
+                    background: "#10B981", 
+                    color: "white", 
+                    border: "none", 
+                    padding: "8px 15px", 
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 'bold',
+                    flex: 1
+                  }}
+                >
+                  {loading ? "⏳ Čuvam..." : "💾 Sačuvaj na Drive"}
+                </button>
+              </div>
+              
+              {hasLocalData && (
+                <div style={{ 
+                  marginTop: '10px', 
+                  padding: '10px', 
+                  background: '#FFFBEB',
+                  border: '1px solid #F59E0B',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}>
+                  ⚠️ <strong>Imate lokalne podatke</strong> - koristite dugmad iznad za sinhronizaciju
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold' }}>🔐 Niste prijavljeni na Google Drive</span>
+              <button 
+                onClick={handleLogin}
+                style={{ 
+                  background: "#10B981", 
+                  color: "white", 
+                  border: "none", 
+                  padding: "8px 15px", 
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: 'bold'
+                }}
+              >
+                Prijavi se sa Google
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Tab Content */}
-        <div style={{
-          background: 'white',
-          borderRadius: '0 0 10px 10px',
-          padding: '20px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          minHeight: '500px'
-        }}>
-          {activeTab === 'unos' && (
-            <DayEntry 
-              onSave={handleSaveDay}
-              initialData={editingDay ? editingDay : { pocetnoStanje: getNextDayStartingBalance() }}
-              onCancel={editingDay ? handleCancelEdit : null}
-            />
+        {/* Navigacija */}
+        <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <Link to="/">
+            <button style={{ 
+              marginRight: "10px",
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}>
+              {editingDay ? "✏️ Edit Dan" : "📝 Unos dana"}
+            </button>
+          </Link>
+          <Link to="/summary">
+            <button style={{ 
+              background: '#8B5CF6',
+              color: 'white',
+              border: 'none',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}>
+              📂 Sumarni pregled
+            </button>
+          </Link>
+          
+          {editingDay && (
+            <button 
+              onClick={handleCancelEdit}
+              style={{ 
+                background: "#6B7280", 
+                color: "white", 
+                border: "none", 
+                padding: "12px 20px", 
+                borderRadius: "8px", 
+                cursor: "pointer",
+                fontWeight: 'bold'
+              }}
+            >
+              ❌ Otkaži Edit
+            </button>
           )}
           
-          {activeTab === 'pregled' && (
-            <SummaryView 
-              days={days}
-              onDeleteDay={handleDeleteDay}
-              onEditDay={handleEditDay}
-            />
-          )}
+          {/* RUČNI BACKUP - UVIJEK DOSTUPAN */}
+          <button 
+            onClick={() => manualBackup(days)}
+            style={{ 
+              background: "#F59E0B", 
+              color: "white", 
+              border: "none", 
+              padding: "12px 20px", 
+              borderRadius: "8px", 
+              cursor: "pointer",
+              fontWeight: 'bold'
+            }}
+          >
+            📋 Ručni Backup
+          </button>
         </div>
 
-        {/* Info Box */}
-        {!editingDay && (
-          <div style={{
-            marginTop: '20px',
-            padding: '15px',
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
-            borderRadius: '8px',
-            fontSize: '14px'
-          }}>
-            <strong>💡 Informacija:</strong> Novo stanje kase se automatski prenosi na sledeći dan kao početno stanje. 
-            {getNextDayStartingBalance() && ` Trenutno stanje: ${getNextDayStartingBalance()} €`}
-          </div>
-        )}
+        {/* Rute */}
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <DayEntry 
+                onSave={handleSave} 
+                initialData={editingDay}
+                onCancel={editingDay ? handleCancelEdit : null}
+              />
+            } 
+          />
+          <Route 
+            path="/summary" 
+            element={
+              <SummaryView 
+                days={days} 
+                onDeleteDay={handleDeleteDay}
+                onEditDay={handleEditDay}
+              />
+            } 
+          />
+        </Routes>
       </div>
-    </div>
+    </Router>
   );
 }
 
