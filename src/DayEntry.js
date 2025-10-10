@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import OcrUpload from './OcrUpload';
 
-function DayEntry({ onSave, initialData, onCancel, getAutoPocetnoStanje, days }) {
+function DayEntry({ onSave, initialData, onCancel }) {
   const [dan, setDan] = useState('');
   const [mjesec, setMjesec] = useState('');
   const [godina, setGodina] = useState('');
@@ -12,7 +12,6 @@ function DayEntry({ onSave, initialData, onCancel, getAutoPocetnoStanje, days })
   const [kesDobitText, setKesDobitText] = useState('');
   const [pocetnoStanje, setPocetnoStanje] = useState('');
   const [korekcija, setKorekcija] = useState('');
-  const [autoStanjeInfo, setAutoStanjeInfo] = useState('');
 
   // Pomoćna funkcija za formatiranje datuma za input
   const formatDateForInput = (dan, mjesec, godina) => {
@@ -39,23 +38,6 @@ function DayEntry({ onSave, initialData, onCancel, getAutoPocetnoStanje, days })
     return { dan: '', mjesec: '', godina: '' };
   };
 
-  // Automatsko računanje početnog stanja kada se promeni datum
-  useEffect(() => {
-    if (dan && mjesec && godina && !initialData) {
-      const formattedDatum = `${dan.padStart(2, '0')}.${mjesec.padStart(2, '0')}.${godina}`;
-      const autoStanje = getAutoPocetnoStanje(formattedDatum);
-      
-      setPocetnoStanje(autoStanje.toString());
-      
-      // Postavi informaciju o automatskom stanju
-      if (autoStanje !== 0) {
-        setAutoStanjeInfo(`♻️ Automatski preneseno stanje iz prethodnog dana: ${autoStanje} RSD`);
-      } else {
-        setAutoStanjeInfo('ℹ️ Nema prethodnog dana - početno stanje: 0 RSD');
-      }
-    }
-  }, [dan, mjesec, godina, initialData, getAutoPocetnoStanje]);
-
   useEffect(() => {
     if (initialData) {
       if (initialData.datum) {
@@ -72,7 +54,6 @@ function DayEntry({ onSave, initialData, onCancel, getAutoPocetnoStanje, days })
       setKesDobitText(initialData.kesDobitText || '');
       setPocetnoStanje(initialData.pocetnoStanje?.toString() || '');
       setKorekcija(initialData.korekcija?.toString() || '');
-      setAutoStanjeInfo(initialData ? '✏️ Edit mode - možete ručno izmeniti početno stanje' : '');
     } else {
       // Podrazumevane vrijednosti za novi unos
       const today = new Date();
@@ -151,7 +132,6 @@ function DayEntry({ onSave, initialData, onCancel, getAutoPocetnoStanje, days })
       setKesDobitText('');
       setPocetnoStanje('');
       setKorekcija('');
-      setAutoStanjeInfo('');
     }
   };
 
@@ -229,33 +209,8 @@ function DayEntry({ onSave, initialData, onCancel, getAutoPocetnoStanje, days })
       <label>💰 Keš dobit (npr. +200 mirko):</label>
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
-      <div style={{ marginBottom: '15px' }}>
-        <label>📦 Početno stanje kase:</label>
-        <input 
-          type="text" 
-          value={pocetnoStanje} 
-          onChange={(e) => setPocetnoStanje(e.target.value)} 
-        />
-        {autoStanjeInfo && (
-          <div style={{ 
-            marginTop: '5px', 
-            padding: '8px', 
-            background: '#EFF6FF',
-            border: '1px solid #3B82F6',
-            borderRadius: '4px',
-            fontSize: '14px',
-            color: '#1E40AF'
-          }}>
-            {autoStanjeInfo}
-          </div>
-        )}
-        <small style={{ color: '#666' }}>
-          {initialData 
-            ? 'U edit modu možete ručno izmeniti početno stanje' 
-            : 'Automatski se popunjava stanjem iz prethodnog dana'
-          }
-        </small>
-      </div>
+      <label>📦 Početno stanje kase:</label>
+      <input type="text" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
 
       <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
