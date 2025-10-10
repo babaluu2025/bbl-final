@@ -85,6 +85,13 @@ function App() {
         localStorage.setItem('bbl_days', JSON.stringify(driveData));
         setHasLocalData(false);
         showSyncStatus("✅ Podaci uspešno učitani sa Drive-a", "success");
+        
+        // DODATO: Forsiraj reload forme za unos novog dana
+        setTimeout(() => {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }, 100);
+        
       } else {
         showSyncStatus("ℹ️ Nema podataka na Drive-u", "info");
       }
@@ -265,7 +272,7 @@ function App() {
                 style={{ 
                   background: "#10B981", 
                   color: "white", 
-                  border: "none", 
+                    border: "none", 
                   padding: "8px 15px", 
                   borderRadius: "6px",
                   cursor: "pointer",
@@ -342,16 +349,17 @@ function App() {
           </button>
         </div>
 
-              {/* Rute */}
+        {/* Rute */}
         <Routes>
           <Route 
             path="/" 
             element={
               <DayEntry 
+                key={days.length} // DODATO: forsira re-render kada se days promijeni
                 onSave={handleSave} 
                 initialData={editingDay}
                 onCancel={editingDay ? handleCancelEdit : null}
-                days={days} // DODAJ OVO - proslijeđuje days podatke
+                days={days}
               />
             } 
           />
