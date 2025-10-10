@@ -480,6 +480,31 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </span>
                   </div>
 
+                  {/* STANJE KASE - DODATO U PREGLED */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: '#FFFBEB',
+                    borderRadius: '8px',
+                    border: '2px solid #F59E0B'
+                  }}>
+                    <span style={{ 
+                      fontWeight: 'bold',
+                      fontSize: '16px'
+                    }}>
+                      💼 Stanje kase:
+                    </span>
+                    <span style={{ 
+                      fontWeight: 'bold', 
+                      fontSize: '18px',
+                      color: '#D97706'
+                    }}>
+                      {format(entry.stanje)} €
+                    </span>
+                  </div>
+
                   {/* REZULTAT - POSEBNO ISTAKNUT */}
                   <div style={{
                     display: 'flex',
@@ -506,21 +531,23 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </span>
                   </div>
 
+                  {/* UPLAĆEN PAZAR - TAKOĐE DODATO */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '10px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px'
+                    background: '#f0fdf4',
+                    borderRadius: '8px',
+                    border: '1px solid #10B981'
                   }}>
-                    <span style={{ fontWeight: 'bold' }}>💼 Stanje kase:</span>
+                    <span style={{ fontWeight: 'bold' }}>✅ Uplaćen pazar:</span>
                     <span style={{ 
                       fontWeight: 'bold', 
-                      color: '#1f2937',
+                      color: '#10B981',
                       fontSize: '16px'
                     }}>
-                      {format(entry.stanje)} €
+                      {format(entry.uplacenPazar)} €
                     </span>
                   </div>
                 </div>
@@ -651,14 +678,6 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                   }}>
                     <span style={{ fontWeight: 'bold' }}>✏️ Korekcija:</span>
                     <span style={{ fontWeight: 'bold' }}>{format(entry.korekcija)} €</span>
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span style={{ fontWeight: 'bold' }}>✅ Uplaćen pazar:</span>
-                    <span style={{ fontWeight: 'bold' }}>{format(entry.uplacenPazar)} €</span>
                   </div>
                 </div>
 
