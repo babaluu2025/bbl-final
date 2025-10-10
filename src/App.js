@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import DayEntry from './components/DayEntry';
 import SummaryView from './components/SummaryView';
-import './App.css';
 
 function App() {
   const [days, setDays] = useState([]);
   const [editingDay, setEditingDay] = useState(null);
   const [activeTab, setActiveTab] = useState('unos');
+
+  const appStyles = {
+    minHeight: '100vh',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
+    WebkitFontSmoothing: 'antialiased',
+    MozOsxFontSmoothing: 'grayscale',
+    backgroundColor: '#f5f5f5'
+  };
 
   // Učitavanje podataka iz localStorage
   useEffect(() => {
@@ -85,7 +92,7 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="App" style={appStyles}>
       <header style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
