@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import OcrUpload from './OcrUpload';
 
-function DayEntry({ onSave, initialData, onCancel }) {
+function DayEntry({ onSave, initialData, onCancel, days }) { // DODAJ days prop
   const [dan, setDan] = useState('');
   const [mjesec, setMjesec] = useState('');
   const [godina, setGodina] = useState('');
@@ -38,8 +38,35 @@ function DayEntry({ onSave, initialData, onCancel }) {
     return { dan: '', mjesec: '', godina: '' };
   };
 
+  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE
+  const getPreviousDayCashState = () => {
+    if (!days || days.length === 0) return 0;
+    
+    // Sortiraj dane po datumu (najnoviji prvi)
+    const sortedDays = [...days].sort((a, b) => {
+      const dateA = parseDate(a.datum);
+      const dateB = parseDate(b.datum);
+      return dateB - dateA;
+    });
+    
+    // Uzmi stanje iz posljednjeg dana
+    const lastDay = sortedDays[0];
+    return lastDay.stanje || 0;
+  };
+
+  // Pomoćna funkcija za parsiranje datuma
+  const parseDate = (dateStr) => {
+    if (!dateStr) return new Date(0);
+    if (dateStr.includes('.')) {
+      const [dan, mjesec, godina] = dateStr.split('.');
+      return new Date(`${godina}-${mjesec.padStart(2, '0')}-${dan.padStart(2, '0')}`);
+    }
+    return new Date(dateStr);
+  };
+
   useEffect(() => {
     if (initialData) {
+      // EDIT MODE - koristi postojeće vrijednosti
       if (initialData.datum) {
         const parsed = parseDateFromOCR(initialData.datum);
         setDan(parsed.dan);
@@ -55,13 +82,19 @@ function DayEntry({ onSave, initialData, onCancel }) {
       setPocetnoStanje(initialData.pocetnoStanje?.toString() || '');
       setKorekcija(initialData.korekcija?.toString() || '');
     } else {
-      // Podrazumevane vrijednosti za novi unos
+      // NOVI DAN - automatski postavi početno stanje iz prethodnog dana
       const today = new Date();
       setDan(today.getDate().toString());
       setMjesec((today.getMonth() + 1).toString());
       setGodina(today.getFullYear().toString());
+      
+      // AUTOMATSKO POSTAVLJANJE POČETNOG STANJA IZ PRETHODNOG DANA
+      const previousCashState = getPreviousDayCashState();
+      if (previousCashState > 0) {
+        setPocetnoStanje(previousCashState.toString());
+      }
     }
-  }, [initialData]);
+  }, [initialData, days]); // DODAJ days u dependency array
 
   const parseLines = (text, forcePositive = false) => {
     return text
@@ -158,6 +191,23 @@ function DayEntry({ onSave, initialData, onCancel }) {
         </div>
       )}
 
+      {/* INFORMACIJA O AUTOMATSKOM PRENOSU STANJA */}
+      {!initialData && days && days.length > 0 && (
+        <div style={{
+          marginBottom: '15px',
+          padding: '12px',
+          background: '#FFFBEB',
+          border: '2px solid #F59E0B',
+          borderRadius: '8px',
+          fontSize: '14px'
+        }}>
+          <strong>💡 Automatski prenos stanja:</strong> 
+          <br />
+          Početno stanje kase je automatski postavljeno na <strong>{getPreviousDayCashState().toFixed(2)} €</strong> 
+          (stanje iz posljednjeg dana: {days[days.length - 1]?.datum})
+        </div>
+      )}
+
       <OcrUpload
         onExtract={(data) => {
           if (data.datum) {
@@ -210,7 +260,12 @@ function DayEntry({ onSave, initialData, onCancel }) {
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
       <label>📦 Početno stanje kase:</label>
-      <input type="text" value={pocetnoStanje} onChange={(e) => setPocetnoStanje(e.target.value)} />
+      <input 
+        type="text" 
+        value={pocetnoStanje} 
+        onChange={(e) => setPocetnoStanje(e.target.value)} 
+        placeholder="Automatski popunjeno iz prethodnog dana"
+      />
 
       <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
