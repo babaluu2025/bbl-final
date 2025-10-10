@@ -207,6 +207,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             <p>🧾 Fiskalni računi: <span class="value">${format(entry.fiskalni)} €</span></p>
             <p>💵 Sunmi (gotovina): <span class="value">${format(entry.sunmi)} €</span></p>
             <p>📊 Ukupan pazar: <span class="value">${format(entry.pazar)} €</span></p>
+            <p>📉 Stvarni pazar za uplatu: <span class="value">${format(entry.stvarnaUplata)} €</span></p>
             <p>💰 KES NA DAN: <span class="value">${format(entry.kesNaDan)} €</span></p>
           </div>
 
@@ -234,7 +235,6 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             <p>Početno stanje kase: <span class="value">${format(entry.pocetnoStanje)} €</span></p>
             <p>Korekcija: <span class="value">${format(entry.korekcija)} €</span></p>
             <p class="total">💼 Novo stanje kase: <span class="value">${format(entry.novoStanjeKase)} €</span></p>
-            <p class="total">Uplaćen pazar: <span class="value">${format(entry.uplacenPazar)} €</span></p>
           </div>
 
           <div class="no-print" style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc;">
@@ -315,7 +315,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             marginBottom: '20px',
             fontSize: '18px'
           }}>
-            📈 Mjesečni Sumarni Pregled
+            📈 Mjesečni Sumarni Pregled - Razlika na dan
           </h3>
           
           {monthlySummary.length === 0 ? (
@@ -703,7 +703,26 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </span>
                   </div>
 
-                  {/* KES NA DAN - PREIMENOVANO */}
+                  {/* STVARNI PAZAR ZA UPLATU - OSTAJE */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: '#f8f9fa',
+                    borderRadius: '8px'
+                  }}>
+                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>📉 Stvarni pazar za uplatu:</span>
+                    <span style={{ 
+                      fontWeight: 'bold', 
+                      color: '#1f2937',
+                      fontSize: isMobile ? '16px' : '18px'
+                    }}>
+                      {format(entry.stvarnaUplata)} €
+                    </span>
+                  </div>
+
+                  {/* KES NA DAN - ISPOD STVARNI PAZAR ZA UPLATU */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -728,7 +747,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </span>
                   </div>
 
-                  {/* RAZLIKA NA DAN - PREIMENOVANO */}
+                  {/* RAZLIKA NA DAN - ISPOD KES NA DAN */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -753,7 +772,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </span>
                   </div>
 
-                  {/* NOVO STANJE KASE - PREIMENOVANO */}
+                  {/* NOVO STANJE KASE - NA KRAJU */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -775,26 +794,6 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                       color: '#2563eb'
                     }}>
                       {format(entry.novoStanjeKase)} €
-                    </span>
-                  </div>
-
-                  {/* UPLAĆEN PAZAR */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    background: '#f0fdf4',
-                    borderRadius: '8px',
-                    border: '1px solid #10B981'
-                  }}>
-                    <span style={{ fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>✅ Uplaćen pazar:</span>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      color: '#10B981',
-                      fontSize: isMobile ? '16px' : '18px'
-                    }}>
-                      {format(entry.uplacenPazar)} €
                     </span>
                   </div>
                 </div>
