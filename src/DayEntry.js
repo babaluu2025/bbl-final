@@ -93,9 +93,10 @@ function DayEntry({ onSave, initialData, onCancel }) {
     const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
-    const stvarnaUplata = round(fisk - virmani);
-    const rezultat = round(sun + kesDobit - rashodi);
-    const stanje = round(pocStanje + rezultat + korek);
+    // PREIMENOVANO PREMA ZAHTJEVU:
+    const kesNaDan = round(fisk - virmani); // Prethodno "stvarnaUplata"
+    const razlikaNaDan = round(sun + kesDobit - rashodi); // Prethodno "rezultat"
+    const novoStanjeKase = round(pocStanje + razlikaNaDan + korek); // Prethodno "stanje"
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
     const pazar = round(fisk + sun);
 
@@ -109,13 +110,13 @@ function DayEntry({ onSave, initialData, onCancel }) {
       kesDobitText,
       rashodi,
       kesDobit,
-      stvarnaUplata,
-      rezultat,
+      kesNaDan, // PREIMENOVANO
+      razlikaNaDan, // PREIMENOVANO
       uplacenPazar,
       pazar,
       pocetnoStanje: pocStanje,
       korekcija: korek,
-      stanje,
+      novoStanjeKase, // PREIMENOVANO
     };
 
     onSave(danObj);
