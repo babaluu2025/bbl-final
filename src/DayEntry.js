@@ -38,31 +38,38 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     return { dan: '', mjesec: '', godina: '' };
   };
 
-  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE - POPRAVLJENA
+  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE
   const getPreviousDayCashState = () => {
     if (!days || days.length === 0) return 0;
     
-    // Sortiraj dane po DATUMU (najnoviji prvi)
-    const sortedDays = [...days].sort((a, b) => {
+    // Pronađi najnoviji datum (najveći datum)
+    let latestDate = new Date(0);
+    let latestDay = null;
+    
+    days.forEach(day => {
       try {
-        // Konvertuj "dd.mm.yyyy" u Date objekat
-        const parseDatum = (datum) => {
-          const [d, m, y] = datum.split('.');
-          return new Date(y, m - 1, d); // m-1 jer su mjeseci 0-11
-        };
-        
-        const dateA = parseDatum(a.datum);
-        const dateB = parseDatum(b.datum);
-        return dateB - dateA; // opadajući redosled - najnoviji prvi
+        const [dan, mjesec, godina] = day.datum.split('.');
+        const dayDate = new Date(godina, mjesec - 1, dan);
+        if (dayDate > latestDate) {
+          latestDate = dayDate;
+          latestDay = day;
+        }
       } catch (error) {
-        return 0;
+        console.error("Greška pri parsiranju datuma:", day.datum);
       }
     });
     
-    // Uzmi stanje iz NAJNOVIJEG dana
-    const latestDay = sortedDays[0];
-    console.log("🔍 Najnoviji dan:", latestDay?.datum, "Stanje:", latestDay?.stanje);
     return latestDay?.stanje || 0;
+  };
+
+  // Pomoćna funkcija za parsiranje datuma
+  const parseDate = (dateStr) => {
+    if (!dateStr) return new Date(0);
+    if (dateStr.includes('.')) {
+      const [dan, mjesec, godina] = dateStr.split('.');
+      return new Date(`${godina}-${mjesec.padStart(2, '0')}-${dan.padStart(2, '0')}`);
+    }
+    return new Date(dateStr);
   };
 
   useEffect(() => {
@@ -91,19 +98,11 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       
       // AUTOMATSKO POSTAVLJANJE POČETNOG STANJA IZ PRETHODNOG DANA
       const previousCashState = getPreviousDayCashState();
-      console.log("💰 Automatsko stanje iz prethodnog dana:", previousCashState);
-      setPocetnoStanje(previousCashState > 0 ? previousCashState.toString() : '');
+      if (previousCashState > 0) {
+        setPocetnoStanje(previousCashState.toString());
+      }
     }
   }, [initialData, days]);
-
-  // DODAJ OVO: Ažuriraj početno stanje kada se days promijeni
-  useEffect(() => {
-    if (!initialData && days && days.length > 0) {
-      const previousCashState = getPreviousDayCashState();
-      console.log("🔄 Ažuriranje stanja zbog promjene days:", previousCashState);
-      setPocetnoStanje(previousCashState > 0 ? previousCashState.toString() : '');
-    }
-  }, [days, initialData]);
 
   const parseLines = (text, forcePositive = false) => {
     return text
@@ -135,17 +134,11 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
 
-    // KALKULACIJE PREMA ŠEMI
-    const pazar = round(fisk + sun);
     const stvarnaUplata = round(fisk - virmani);
     const rezultat = round(sun + kesDobit - rashodi);
     const stanje = round(pocStanje + rezultat + korek);
     const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
-
-    console.log("🧮 Kalkulacije:", {
-      fisk, sun, virmani, rashodi, kesDobit, pocStanje, korek,
-      pazar, stvarnaUplata, rezultat, stanje, uplacenPazar
-    });
+    const pazar = round(fisk + sun);
 
     const danObj = {
       datum: formattedDatum,
@@ -218,9 +211,9 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
         }}>
           <strong>💡 Automatski prenos stanja:</strong> 
           <br />
-          Početno stanje kase: <strong>{getPreviousDayCashState().toFixed(2)} €</strong> 
+          Trenutno stanje iz poslednjeg dana: <strong>{getPreviousDayCashState().toFixed(2)} €</strong> 
           <br />
-          <small>Preuzeto iz najnovijeg dana: {days.length} dana u sistemu</small>
+          <small>Koristite dugme "📥 Prebaci stanje" ispod da kopirate</small>
         </div>
       )}
 
@@ -276,17 +269,55 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
       <label>📦 Početno stanje kase:</label>
-      <input 
-        type="text" 
-        value={pocetnoStanje} 
-        onChange={(e) => setPocetnoStanje(e.target.value)} 
-        placeholder="Automatski popunjeno iz prethodnog dana"
-      />
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px' }}>
+        <input 
+          type="text" 
+          value={pocetnoStanje} 
+          onChange={(e) => setPocetnoStanje(e.target.value)} 
+          placeholder="Automatski popunjeno iz prethodnog dana"
+          style={{ flex: 1, padding: '10px', fontSize: '16px' }}
+        />
+        <button 
+          type="button"
+          onClick={() => {
+            const previousCash = getPreviousDayCashState();
+            if (previousCash > 0) {
+              setPocetnoStanje(previousCash.toString());
+              alert(`✅ Stanje preneseno: ${previousCash.toFixed(2)} €\n\nSada možete sačuvati dan.`);
+            } else {
+              alert('ℹ️ Nema prethodnog dana sa stanjem');
+            }
+          }}
+          style={{
+            background: '#10B981',
+            color: 'white',
+            border: 'none',
+            padding: '12px 15px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          📥 Prebaci stanje
+        </button>
+      </div>
 
       <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
       <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
-      <button type="submit" style={{ marginTop: '15px', padding: '12px 20px', fontSize: '16px' }}>
+      <button type="submit" style={{ 
+        marginTop: '15px', 
+        padding: '12px 20px', 
+        fontSize: '16px',
+        background: '#2563eb',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        width: '100%'
+      }}>
         💾 {initialData ? 'Sačuvaj izmene' : 'Sačuvaj dan'}
       </button>
     </form>
