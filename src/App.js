@@ -22,6 +22,52 @@ function App() {
   const [editingDay, setEditingDay] = useState(null);
   const [hasLocalData, setHasLocalData] = useState(false);
 
+  // Funkcija za pronalaženje prethodnog dana i njegovog stanja
+  const getPrethodniDanStanje = (trenutniDatum, sviDani) => {
+    if (!sviDani || sviDani.length === 0) return 0;
+    
+    // Sortiraj dane po datumu (od najstarijeg do najnovijeg)
+    const sortiraniDani = [...sviDani].sort((a, b) => {
+      const [danA, mjesecA, godinaA] = a.datum.split('.').map(Number);
+      const [danB, mjesecB, godinaB] = b.datum.split('.').map(Number);
+      const dateA = new Date(godinaA, mjesecA - 1, danA);
+      const dateB = new Date(godinaB, mjesecB - 1, danB);
+      return dateA - dateB;
+    });
+    
+    // Parsiraj trenutni datum
+    const [trenutniDan, trenutniMjesec, trenutnaGodina] = trenutniDatum.split('.').map(Number);
+    const trenutniDate = new Date(trenutnaGodina, trenutniMjesec - 1, trenutniDan);
+    
+    // Pronađi poslednji dan pre trenutnog datuma
+    let prethodniDan = null;
+    
+    for (let i = sortiraniDani.length - 1; i >= 0; i--) {
+      const dan = sortiraniDani[i];
+      const [danD, mjesecD, godinaD] = dan.datum.split('.').map(Number);
+      const datumD = new Date(godinaD, mjesecD - 1, danD);
+      
+      if (datumD < trenutniDate) {
+        prethodniDan = dan;
+        break;
+      }
+    }
+    
+    return prethodniDan ? prethodniDan.stanje : 0;
+  };
+
+  // Funkcija za automatsko računanje početnog stanja
+  const getAutoPocetnoStanje = (datum, editovanDan = null) => {
+    // Ako editujemo postojeći dan, koristimo originalno početno stanje
+    if (editovanDan && editingDay) {
+      return editovanDan.pocetnoStanje || 0;
+    }
+    
+    // Ako je novi dan, koristimo stanje iz prethodnog dana
+    const prethodnoStanje = getPrethodniDanStanje(datum, days);
+    return prethodnoStanje;
+  };
+
   // Učitaj lokalne podatke pri startu
   useEffect(() => {
     const localDays = localStorage.getItem('bbl_days');
@@ -41,10 +87,6 @@ function App() {
           setUserEmail(userInfo.email);
           setIsLoggedIn(true);
           showSyncStatus("✅ Uspešno prijavljen!", "success");
-          
-          // NE UČITAVAJ AUTOMATSKI - samo prijavi korisnika
-          // loadDataFromDrive(); // OVO JE IZBRIŠANO
-          
         } catch (error) {
           console.error("Greška pri prijavi:", error);
           showSyncStatus("❌ Greška pri prijavi", "error");
@@ -53,7 +95,6 @@ function App() {
         const authStatus = getAuthStatus();
         setIsLoggedIn(authStatus.isLoggedIn);
         setUserEmail(authStatus.userEmail);
-        // NE UČITAVAJ AUTOMATSKI NI OVDE
       }
     };
 
@@ -62,7 +103,6 @@ function App() {
 
   // Učitavanje podataka sa Drive-a - SAMO NA ZAHTEV
   const loadDataFromDrive = async () => {
-    // UPIT ZA POTVRDU PRVO
     if (hasLocalData && days.length > 0) {
       const confirmLoad = window.confirm(
         "🚨 PAŽNJA! 🚨\n\n" +
@@ -265,7 +305,7 @@ function App() {
                 style={{ 
                   background: "#10B981", 
                   color: "white", 
-                  border: "none", 
+                    border: "none", 
                   padding: "8px 15px", 
                   borderRadius: "6px",
                   cursor: "pointer",
@@ -351,6 +391,8 @@ function App() {
                 onSave={handleSave} 
                 initialData={editingDay}
                 onCancel={editingDay ? handleCancelEdit : null}
+                getAutoPocetnoStanje={getAutoPocetnoStanje}
+                days={days}
               />
             } 
           />
