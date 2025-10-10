@@ -1,21 +1,19 @@
 {
   "name": "bbl-final",
   "version": "1.0.0",
+  "description": "BBL Billing - Menadžer Kase",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3",
-    "react-scripts": "5.0.1",
-    "tesseract.js": "^4.1.1"
+    "react-scripts": "5.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "CI=false react-scripts build",
+    "build:verbose": "npm run build --verbose",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
-    "build": "CI=false react-scripts build",
-    "build:verbose": "npm run build --verbose"
   },
   "eslintConfig": {
     "extends": [
