@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import DayEntry from './components/DayEntry';
 import SummaryView from './components/SummaryView';
+import './App.css';
 
 function App() {
   const [days, setDays] = useState([]);
   const [editingDay, setEditingDay] = useState(null);
   const [activeTab, setActiveTab] = useState('unos');
-
-  const appStyles = {
-    minHeight: '100vh',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
-    WebkitFontSmoothing: 'antialiased',
-    MozOsxFontSmoothing: 'grayscale',
-    backgroundColor: '#f5f5f5'
-  };
 
   // Učitavanje podataka iz localStorage
   useEffect(() => {
@@ -31,14 +24,12 @@ function App() {
 
   // Čuvanje podataka u localStorage
   useEffect(() => {
-    if (days.length > 0) {
-      localStorage.setItem('bblBillingDays', JSON.stringify(days));
-    }
+    localStorage.setItem('bblBillingDays', JSON.stringify(days));
   }, [days]);
 
   // Funkcija za automatsko prenošenje stanja kase na sledeći dan
   const getNextDayStartingBalance = () => {
-    if (days.length === 0) return 0;
+    if (days.length === 0) return '';
     
     const sortedDays = [...days].sort((a, b) => {
       const dateA = parseDate(a.datum);
@@ -46,7 +37,8 @@ function App() {
       return dateB - dateA;
     });
     
-    return sortedDays[0]?.novoStanjeKase || 0;
+    const latestDay = sortedDays[0];
+    return latestDay?.novoStanjeKase ? latestDay.novoStanjeKase.toString() : '';
   };
 
   const parseDate = (dateStr) => {
@@ -76,6 +68,7 @@ function App() {
       };
       setDays(prev => [...prev, newDay]);
     }
+    setActiveTab('pregled');
   };
 
   const handleEditDay = (day) => {
@@ -92,7 +85,7 @@ function App() {
   };
 
   return (
-    <div className="App" style={appStyles}>
+    <div className="App">
       <header style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
@@ -161,7 +154,7 @@ function App() {
               transition: 'all 0.3s ease'
             }}
           >
-            📊 Pregled Svih Dana
+            📊 Pregled Svih Dana ({days.length})
           </button>
         </div>
 
@@ -176,12 +169,7 @@ function App() {
           {activeTab === 'unos' && (
             <DayEntry 
               onSave={handleSaveDay}
-              initialData={editingDay ? {
-                ...editingDay,
-                pocetnoStanje: editingDay ? editingDay.pocetnoStanje : getNextDayStartingBalance()
-              } : {
-                pocetnoStanje: getNextDayStartingBalance()
-              }}
+              initialData={editingDay ? editingDay : { pocetnoStanje: getNextDayStartingBalance() }}
               onCancel={editingDay ? handleCancelEdit : null}
             />
           )}
@@ -196,16 +184,19 @@ function App() {
         </div>
 
         {/* Info Box */}
-        <div style={{
-          marginTop: '20px',
-          padding: '15px',
-          background: '#f0fdf4',
-          border: '1px solid #bbf7d0',
-          borderRadius: '8px',
-          fontSize: '14px'
-        }}>
-          <strong>💡 Informacija:</strong> Novo stanje kase se automatski prenosi na sledeći dan kao početno stanje.
-        </div>
+        {!editingDay && (
+          <div style={{
+            marginTop: '20px',
+            padding: '15px',
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: '8px',
+            fontSize: '14px'
+          }}>
+            <strong>💡 Informacija:</strong> Novo stanje kase se automatski prenosi na sledeći dan kao početno stanje. 
+            {getNextDayStartingBalance() && ` Trenutno stanje: ${getNextDayStartingBalance()} €`}
+          </div>
+        )}
       </div>
     </div>
   );
