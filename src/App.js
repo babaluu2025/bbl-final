@@ -1,5 +1,3 @@
-// ZAMENITE CEO App.js SA OVIM KODOM:
-
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import DayEntry from "./DayEntry";
@@ -24,103 +22,17 @@ function App() {
   const [editingDay, setEditingDay] = useState(null);
   const [hasLocalData, setHasLocalData] = useState(false);
 
-  // FUNKCIJA ZA PRONALAŽENJE PRETHODNOG DANA - POPRAVLJENA
-  const getPrethodniDanStanje = (trenutniDatum, sviDani) => {
-    console.log("🔍 Tražim prethodni dan za:", trenutniDatum);
-    console.log("Svi dani:", sviDani);
-    
-    if (!sviDani || sviDani.length === 0) {
-      console.log("📭 Nema prethodnih dana, vraćam 0");
-      return 0;
-    }
-    
-    try {
-      // Sortiraj dane po datumu (od najstarijeg do najnovijeg)
-      const sortiraniDani = [...sviDani].sort((a, b) => {
-        try {
-          const [danA, mjesecA, godinaA] = a.datum.split('.').map(Number);
-          const [danB, mjesecB, godinaB] = b.datum.split('.').map(Number);
-          const dateA = new Date(godinaA, mjesecA - 1, danA);
-          const dateB = new Date(godinaB, mjesecB - 1, danB);
-          return dateA - dateB;
-        } catch (error) {
-          console.error("Greška pri sortiranju:", error);
-          return 0;
-        }
-      });
-      
-      console.log("📅 Sortirani dani:", sortiraniDani.map(d => d.datum));
-
-      // Parsiraj trenutni datum
-      const [trenutniDan, trenutniMjesec, trenutnaGodina] = trenutniDatum.split('.').map(Number);
-      const trenutniDate = new Date(trenutnaGodina, trenutniMjesec - 1, trenutniDan);
-      
-      console.log("🎯 Trenutni datum objekat:", trenutniDate);
-
-      // Pronađi poslednji dan pre trenutnog datuma
-      let prethodniDan = null;
-      
-      for (let i = sortiraniDani.length - 1; i >= 0; i--) {
-        const dan = sortiraniDani[i];
-        try {
-          const [danD, mjesecD, godinaD] = dan.datum.split('.').map(Number);
-          const datumD = new Date(godinaD, mjesecD - 1, danD);
-          
-          console.log(`📊 Poređim ${datumD} sa ${trenutniDate}`, datumD < trenutniDate);
-          
-          if (datumD < trenutniDate) {
-            prethodniDan = dan;
-            console.log("✅ Pronađen prethodni dan:", dan.datum, "stanje:", dan.stanje);
-            break;
-          }
-        } catch (error) {
-          console.error("Greška pri procesiranju datuma:", error);
-          continue;
-        }
-      }
-      
-      const stanje = prethodniDan ? prethodniDan.stanje : 0;
-      console.log("💰 Konačno stanje za prenos:", stanje);
-      return stanje;
-      
-    } catch (error) {
-      console.error("❌ Greška u getPrethodniDanStanje:", error);
-      return 0;
-    }
-  };
-
-  // Funkcija za automatsko računanje početnog stanja
-  const getAutoPocetnoStanje = (datum, editovanDan = null) => {
-    console.log("🔄 getAutoPocetnoStanje pozvan za:", datum, "edit mode:", !!editovanDan);
-    
-    // Ako editujemo postojeći dan, koristimo originalno početno stanje
-    if (editovanDan && editingDay) {
-      console.log("✏️ Edit mode - vraćam originalno stanje:", editovanDan.pocetnoStanje);
-      return editovanDan.pocetnoStanje || 0;
-    }
-    
-    // Ako je novi dan, koristimo stanje iz prethodnog dana
-    const prethodnoStanje = getPrethodniDanStanje(datum, days);
-    console.log("🆕 Novi dan - vraćam prethodno stanje:", prethodnoStanje);
-    return prethodnoStanje;
-  };
-
   // Učitaj lokalne podatke pri startu
   useEffect(() => {
     const localDays = localStorage.getItem('bbl_days');
     if (localDays) {
-      try {
-        const parsedDays = JSON.parse(localDays);
-        console.log("📂 Učitani lokalni podaci:", parsedDays);
-        setDays(parsedDays);
-        setHasLocalData(parsedDays.length > 0);
-      } catch (error) {
-        console.error("Greška pri parsiranju lokalnih podataka:", error);
-      }
+      const parsedDays = JSON.parse(localDays);
+      setDays(parsedDays);
+      setHasLocalData(parsedDays.length > 0);
     }
   }, []);
 
-  // Provera autentifikacije pri učitavanju
+  // Provera autentifikacije pri učitavanju - BEZ AUTOMATSKOG UČITAVANJA
   useEffect(() => {
     const initAuth = async () => {
       if (checkRedirectAuth()) {
@@ -129,6 +41,10 @@ function App() {
           setUserEmail(userInfo.email);
           setIsLoggedIn(true);
           showSyncStatus("✅ Uspešno prijavljen!", "success");
+          
+          // NE UČITAVAJ AUTOMATSKI - samo prijavi korisnika
+          // loadDataFromDrive(); // OVO JE IZBRIŠANO
+          
         } catch (error) {
           console.error("Greška pri prijavi:", error);
           showSyncStatus("❌ Greška pri prijavi", "error");
@@ -137,6 +53,7 @@ function App() {
         const authStatus = getAuthStatus();
         setIsLoggedIn(authStatus.isLoggedIn);
         setUserEmail(authStatus.userEmail);
+        // NE UČITAVAJ AUTOMATSKI NI OVDE
       }
     };
 
@@ -145,6 +62,7 @@ function App() {
 
   // Učitavanje podataka sa Drive-a - SAMO NA ZAHTEV
   const loadDataFromDrive = async () => {
+    // UPIT ZA POTVRDU PRVO
     if (hasLocalData && days.length > 0) {
       const confirmLoad = window.confirm(
         "🚨 PAŽNJA! 🚨\n\n" +
@@ -199,8 +117,6 @@ function App() {
 
   // Čuvanje novog dana - SAMO LOKALNO
   const handleSave = async (dan) => {
-    console.log("💾 Čuvanje dana:", dan);
-    
     let newDays;
 
     if (editingDay) {
@@ -208,7 +124,6 @@ function App() {
         day.id === editingDay.id ? { ...dan, id: editingDay.id } : day
       );
       setEditingDay(null);
-      console.log("✏️ Dan ažuriran");
     } else {
       const newDay = { 
         ...dan, 
@@ -216,7 +131,6 @@ function App() {
         createdAt: new Date().toISOString()
       };
       newDays = [...days, newDay];
-      console.log("🆕 Novi dan dodat");
     }
 
     setDays(newDays);
@@ -238,14 +152,12 @@ function App() {
 
   // Edit dana
   const handleEditDay = (day) => {
-    console.log("✏️ Edit dana:", day);
     setEditingDay(day);
     window.history.pushState({}, '', '/');
   };
 
   // Otkazivanje edit mode
   const handleCancelEdit = () => {
-    console.log("❌ Edit otkazan");
     setEditingDay(null);
   };
 
@@ -439,8 +351,6 @@ function App() {
                 onSave={handleSave} 
                 initialData={editingDay}
                 onCancel={editingDay ? handleCancelEdit : null}
-                getAutoPocetnoStanje={getAutoPocetnoStanje}
-                days={days}
               />
             } 
           />
