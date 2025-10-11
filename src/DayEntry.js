@@ -135,12 +135,15 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
     const uplacenPazarValue = parseFloat(uplacenPazar.replace(',', '.')) || 0;
 
-    // ISPRAVLJENE KALKULACIJE - vraćamo originalnu logiku
+    // ISPRAVLJENE KALKULACIJE - SA PRAVOM FORMULOM ZA KEŠ NA DAN
     const pazar = round(fisk + sun);
     const stvarnaUplata = round(fisk - virmani);
     const rezultat = round(sun + kesDobit - rashodi);
     const stanje = round(pocStanje + rezultat);
-    const kesNaDan = round(sun + kesDobit); // OVO JE BITNO - KES NA DAN
+    
+    // PRAVA FORMULA ZA KEŠ NA DAN:
+    // Keš na dan = Ukupan pazar - Viza i fakture - Rashodi + Keš dobit
+    const kesNaDan = round(pazar - virmani - rashodi + kesDobit);
 
     console.log("🧮 Kalkulacije:", {
       fisk, sun, virmani, rashodi, kesDobit, pocStanje,
@@ -163,7 +166,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       pazar,
       pocetnoStanje: pocStanje,
       stanje,
-      kesNaDan: kesNaDan, // OBAVEZNO DODAJEMO
+      kesNaDan: kesNaDan, // PRAVA VRIJEDNOST
     };
 
     onSave(danObj);
