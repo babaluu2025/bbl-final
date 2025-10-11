@@ -46,16 +46,20 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     }
     
     console.log("🔍 Tražim stanje iz prethodnog dana...");
+    console.log("Svi dani:", days);
     
-    // Sortiraj po ID-u (najnoviji prvi) - JEDNOSTAVNIJE I SIGURNIJE
+    // Sortiraj po DATUMU (najnoviji prvi)
     const sortedDays = [...days].sort((a, b) => {
-      const idA = parseInt(a.id);
-      const idB = parseInt(b.id);
-      return idB - idA;
+      const parseDate = (dateStr) => {
+        if (!dateStr) return new Date(0);
+        const [dan, mjesec, godina] = dateStr.split('.');
+        return new Date(godina, mjesec - 1, dan);
+      };
+      return parseDate(b.datum) - parseDate(a.datum);
     });
     
     const latestDay = sortedDays[0];
-    console.log("📅 Najnoviji dan:", latestDay?.datum, "Stanje:", latestDay?.stanje, "ID:", latestDay?.id);
+    console.log("📅 Najnoviji dan:", latestDay?.datum, "Stanje:", latestDay?.stanje);
     
     return latestDay?.stanje || 0;
   };
@@ -83,8 +87,17 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       setDan(today.getDate().toString());
       setMjesec((today.getMonth() + 1).toString());
       setGodina(today.getFullYear().toString());
+      
+      // POKUŠAJ AUTOMATSKOG PRENOSA
+      setTimeout(() => {
+        const previousCash = getPreviousDayCashState();
+        console.log("🔄 Automatski prenos stanja:", previousCash);
+        if (previousCash > 0) {
+          setPocetnoStanje(previousCash.toString());
+        }
+      }, 100);
     }
-  }, [initialData]);
+  }, [initialData, days]);
 
   const parseLines = (text, forcePositive = false) => {
     return text
@@ -159,20 +172,17 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     }
   };
 
-  // FUNKCIJA ZA PRENOS STANJA - POPRAVLJENA SA DEBUG
+  // FUNKCIJA ZA PRENOS STANJA - POPRAVLJENA
   const handlePrenosStanja = () => {
     const previousCash = getPreviousDayCashState();
     console.log("🔄 Prenos stanja - stanje:", previousCash);
-    console.log("🔄 Trenutno pocetnoStanje:", pocetnoStanje);
-    console.log("🔄 Days array:", days);
+    console.log("🔄 Days count:", days.length);
     
     if (previousCash > 0) {
       setPocetnoStanje(previousCash.toString());
-      console.log("✅ Postavljeno novo stanje:", previousCash.toString());
       alert(`✅ Stanje preneseno: ${previousCash.toFixed(2)} €`);
     } else {
-      console.log("❌ Nema stanja za prenos");
-      alert('ℹ️ Nema prethodnog dana sa stanjem');
+      alert(`❌ Nema stanja za prenos. Ima ${days.length} dana u sistemu.`);
     }
   };
 
@@ -214,6 +224,9 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
           <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#92400E' }}>
             Trenutno stanje iz prethodnog dana: <strong>{previousCashState.toFixed(2)} €</strong>
           </p>
+          <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#92400E' }}>
+            Ukupno dana u sistemu: {days.length}
+          </p>
           <button 
             type="button"
             onClick={handlePrenosStanja}
@@ -233,6 +246,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
         </div>
       )}
 
+      {/* Ostatak koda ostaje isti */}
       <OcrUpload
         onExtract={(data) => {
           if (data.datum) {
@@ -281,7 +295,6 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       <label>💸 Rashodi (npr. -100 gorivo):</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
 
-      {/* PREMIJEŠTENO: Keš dobit ispod rashoda */}
       <label>💰 Keš dobit (npr. +200 mirko):</label>
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
