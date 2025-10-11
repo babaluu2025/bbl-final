@@ -147,7 +147,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             pre { 
               background: #f4f4f4; 
               padding: 10px; 
-              border-radius: 6px;
+              borderRadius: 6px;
               white-space: pre-wrap;
               font-family: Arial, sans-serif;
               font-size: 13px;
@@ -187,7 +187,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             <p>🧾 Fiskalni računi: <span class="value">${format(entry.fiskalni)} €</span></p>
             <p>💵 Sunmi (gotovina): <span class="value">${format(entry.sunmi)} €</span></p>
             <p>📊 Ukupan pazar: <span class="value">${format(entry.pazar)} €</span></p>
-            <p>💰 Keš na dan: <span class="value">${format(entry.kesDobit)} €</span></p>
+            <p>💰 Keš na dan: <span class="value">${format(entry.kesNaDan || 0)} €</span></p>
             <p>📈 Razlika na dan: <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${format(entry.rezultat)} €</span></p>
             <p>📉 Stvarni pazar: <span class="value">${format(entry.stvarnaUplata)} €</span></p>
             <p>💳 Uplačen pazar: <span class="value">${format(entry.uplacenPazar)} €</span></p>
@@ -538,7 +538,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                         padding: "10px 16px",
                         cursor: "pointer",
                         fontSize: "14px",
-                        fontWeight: "bold",
+                        fontWeight: 'bold',
                         minWidth: "80px"
                       }}
                     >
@@ -554,7 +554,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                         padding: "10px 16px",
                         cursor: "pointer",
                         fontSize: "14px",
-                        fontWeight: "bold",
+                        fontWeight: 'bold',
                         minWidth: "80px"
                       }}
                     >
@@ -564,7 +564,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                 </div>
               )}
               
-              {/* OSNOVNI PODACI - NOVI REDOSLED */}
+              {/* OSNOVNI PODACI - NOVI REDOSLED SA "KEŠ NA DAN" */}
               <div style={{ 
                 display: 'flex', 
                 flexDirection: 'column',
@@ -639,7 +639,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     color: '#1f2937',
                     fontSize: isMobile ? '16px' : '18px'
                   }}>
-                    {format(entry.kesDobit)} €
+                    {format(entry.kesNaDan || 0)} €
                   </span>
                 </div>
 
@@ -836,7 +836,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                   textAlign: 'right', 
                   fontWeight: 'bold', 
                   color: '#10B981',
-                  fontSize: '16px',
+                    fontSize: '16px',
                   marginTop: '10px'
                 }}>
                   Ukupno: {format(entry.kesDobit)} €
