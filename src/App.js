@@ -32,7 +32,7 @@ function App() {
     }
   }, []);
 
-  // Provera autentifikacije pri učitavanju - BEZ AUTOMATSKOG UČITAVANJA
+  // Provera autentifikacije pri učitavanju
   useEffect(() => {
     const initAuth = async () => {
       if (checkRedirectAuth()) {
@@ -41,10 +41,6 @@ function App() {
           setUserEmail(userInfo.email);
           setIsLoggedIn(true);
           showSyncStatus("✅ Uspešno prijavljen!", "success");
-          
-          // NE UČITAVAJ AUTOMATSKI - samo prijavi korisnika
-          // loadDataFromDrive(); // OVO JE IZBRIŠANO
-          
         } catch (error) {
           console.error("Greška pri prijavi:", error);
           showSyncStatus("❌ Greška pri prijavi", "error");
@@ -53,24 +49,18 @@ function App() {
         const authStatus = getAuthStatus();
         setIsLoggedIn(authStatus.isLoggedIn);
         setUserEmail(authStatus.userEmail);
-        // NE UČITAVAJ AUTOMATSKI NI OVDE
       }
     };
 
     initAuth();
   }, []);
 
-  // Učitavanje podataka sa Drive-a - SAMO NA ZAHTEV
+  // Učitavanje podataka sa Drive-a
   const loadDataFromDrive = async () => {
-    // UPIT ZA POTVRDU PRVO
     if (hasLocalData && days.length > 0) {
       const confirmLoad = window.confirm(
-        "🚨 PAŽNJA! 🚨\n\n" +
-        "Imate lokalno sačuvane podatke.\n" +
-        "Učitavanje sa Drive-a će ZAMENITI vaše trenutne podatke.\n\n" +
-        "Da li želite da nastavite?"
+        "🚨 PAŽNJA! 🚨\n\nImate lokalno sačuvane podatke.\nUčitavanje sa Drive-a će ZAMENITI vaše trenutne podatke.\n\nDa li želite da nastavite?"
       );
-      
       if (!confirmLoad) {
         showSyncStatus("❌ Učitavanje otkazano", "info");
         return;
@@ -86,7 +76,6 @@ function App() {
         setHasLocalData(false);
         showSyncStatus("✅ Podaci uspešno učitani sa Drive-a", "success");
         
-        // DODATO: Forsiraj reload forme za unos novog dana
         setTimeout(() => {
           window.history.pushState({}, '', '/');
           window.dispatchEvent(new PopStateEvent('popstate'));
@@ -103,7 +92,7 @@ function App() {
     }
   };
 
-  // Snimanje podataka na Drive - SAMO NA ZAHTEV
+  // Snimanje podataka na Drive
   const saveDataToDrive = async () => {
     if (days.length === 0) {
       showSyncStatus("ℹ️ Nema podataka za čuvanje", "info");
@@ -122,7 +111,7 @@ function App() {
     }
   };
 
-  // Čuvanje novog dana - SAMO LOKALNO
+  // Čuvanje novog dana
   const handleSave = async (dan) => {
     let newDays;
 
@@ -147,7 +136,7 @@ function App() {
     showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "success");
   };
 
-  // Brisanje dana - SAMO LOKALNO
+  // Brisanje dana
   const handleDeleteDay = async (dayId) => {
     const newDays = days.filter(day => day.id !== dayId);
     setDays(newDays);
@@ -243,7 +232,6 @@ function App() {
                 </button>
               </div>
               
-              {/* GOOGLE DRIVE AKCIJE - SAMO NA ZAHTEV */}
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button 
                   onClick={loadDataFromDrive}
@@ -318,7 +306,6 @@ function App() {
         <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <Link to="/">
             <button style={{ 
-              marginRight: "10px",
               background: '#2563eb',
               color: 'white',
               border: 'none',
@@ -378,7 +365,6 @@ function App() {
             </button>
           )}
           
-          {/* RUČNI BACKUP - UVIJEK DOSTUPAN */}
           <button 
             onClick={() => manualBackup(days)}
             style={{ 
