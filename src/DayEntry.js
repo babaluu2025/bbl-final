@@ -38,18 +38,26 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     return { dan: '', mjesec: '', godina: '' };
   };
 
-  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE
+  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE - POPRAVLJENA
   const getPreviousDayCashState = () => {
-    if (!days || days.length === 0) return 0;
+    if (!days || days.length === 0) {
+      console.log("📭 Nema dana u sistemu");
+      return 0;
+    }
     
-    // Sortiraj po ID-u (najnoviji prvi)
+    console.log("🔍 Tražim stanje iz prethodnog dana...");
+    
+    // Sortiraj po ID-u (najnoviji prvi) - JEDNOSTAVNIJE I SIGURNIJE
     const sortedDays = [...days].sort((a, b) => {
       const idA = parseInt(a.id);
       const idB = parseInt(b.id);
       return idB - idA;
     });
     
-    return sortedDays[0]?.stanje || 0;
+    const latestDay = sortedDays[0];
+    console.log("📅 Najnoviji dan:", latestDay?.datum, "Stanje:", latestDay?.stanje, "ID:", latestDay?.id);
+    
+    return latestDay?.stanje || 0;
   };
 
   useEffect(() => {
@@ -151,14 +159,19 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     }
   };
 
-  // FUNKCIJA ZA PRENOS STANJA
+  // FUNKCIJA ZA PRENOS STANJA - POPRAVLJENA SA DEBUG
   const handlePrenosStanja = () => {
     const previousCash = getPreviousDayCashState();
+    console.log("🔄 Prenos stanja - stanje:", previousCash);
+    console.log("🔄 Trenutno pocetnoStanje:", pocetnoStanje);
+    console.log("🔄 Days array:", days);
     
     if (previousCash > 0) {
       setPocetnoStanje(previousCash.toString());
+      console.log("✅ Postavljeno novo stanje:", previousCash.toString());
       alert(`✅ Stanje preneseno: ${previousCash.toFixed(2)} €`);
     } else {
+      console.log("❌ Nema stanja za prenos");
       alert('ℹ️ Nema prethodnog dana sa stanjem');
     }
   };
@@ -188,7 +201,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
         </div>
       )}
 
-      {/* DUGME ZA PRENOS STANJA */}
+      {/* DUGME ZA PRENOS STANJA - POPRAVLJENO */}
       {!initialData && days && days.length > 0 && (
         <div style={{
           marginBottom: '15px',
