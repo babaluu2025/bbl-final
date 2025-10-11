@@ -119,7 +119,7 @@ function App() {
     // OBAVEZNO DODAJ KES NA DAN AKO NE POSTOJI
     const danSaKesNaDan = {
       ...dan,
-      kesNaDan: dan.kesNaDan !== undefined ? dan.kesNaDan : (dan.sunmi + dan.kesDobit)
+      kesNaDan: dan.kesNaDan !== undefined ? dan.kesNaDan : (dan.pazar - dan.virmani - dan.rashodi + dan.kesDobit)
     };
 
     if (editingDay) {
