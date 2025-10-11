@@ -92,6 +92,124 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
     return report;
   };
 
+  // FUNKCIJA ZA ŠTAMPANJE MJESEČNOG IZVEŠTAJA
+  const printMonthlyReport = () => {
+    const monthlyReport = getMonthlyDifferenceReport();
+    const monthlyTotal = monthlyReport.reduce((sum, day) => sum + day.razlika, 0);
+    
+    const html = `
+      <html>
+        <head>
+          <title>Mjesečni Izveštaj Razlika</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              padding: 20px; 
+              max-width: 800px;
+              margin: 0 auto;
+              font-size: 14px;
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 20px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+            }
+            h2 { 
+              margin-bottom: 10px; 
+              color: #2563eb;
+              font-size: 18px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+            }
+            th, td {
+              padding: 12px;
+              text-align: left;
+              border: 1px solid #ddd;
+            }
+            th {
+              background: #8B5CF6;
+              color: white;
+              font-weight: bold;
+            }
+            tr:nth-child(even) {
+              background: #f8f9fa;
+            }
+            .total-row {
+              background: #E5E7EB !important;
+              font-weight: bold;
+            }
+            .positive { color: #10B981; }
+            .negative { color: #EF4444; }
+            @media print {
+              body { padding: 15px; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>📈 BBL Billing - Mjesečni Izveštaj Razlika</h2>
+            <h3>📅 Period: ${selectedMonth || 'Svi mjeseci'}</h3>
+            <p>Datum štampe: ${new Date().toLocaleDateString('sr-RS')}</p>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th style="text-align: right;">Razlika</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monthlyReport.map((day, index) => `
+                <tr>
+                  <td>${day.datum}</td>
+                  <td style="text-align: right; color: ${day.razlika >= 0 ? '#10B981' : '#EF4444'}; font-weight: bold;">
+                    ${day.razlika >= 0 ? '+' : ''}${format(day.razlika)} €
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td><strong>UKUPNO:</strong></td>
+                <td style="text-align: right; color: ${monthlyTotal >= 0 ? '#10B981' : '#EF4444'};">
+                  <strong>${monthlyTotal >= 0 ? '+' : ''}${format(monthlyTotal)} €</strong>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div class="no-print" style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
+            <button onclick="window.print()" style="background: #10B981; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+              🖨️ Štampaj
+            </button>
+            <button onclick="window.close()" style="background: #EF4444; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px;">
+              ❌ Zatvori
+            </button>
+          </div>
+
+          <script>
+            window.onload = function() {
+              // Automatski otvori dijalog za štampanje
+              setTimeout(() => {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    
+    const newWindow = window.open("", "_blank");
+    newWindow.document.write(html);
+    newWindow.document.close();
+  };
+
   const handleDelete = (entryId) => {
     if (window.confirm("Da li ste sigurni da želite da obrišete ovaj dan?")) {
       onDeleteDay(entryId);
@@ -147,7 +265,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             pre { 
               background: #f4f4f4; 
               padding: 10px; 
-              borderRadius: 6px;
+              border-radius: 6px;
               white-space: pre-wrap;
               font-family: Arial, sans-serif;
               font-size: 13px;
@@ -317,6 +435,24 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
           }}
         >
           {showMonthlyReport ? '📊 Sakrij Mjesečni Izveštaj' : '📊 Prikaži Mjesečni Izveštaj'}
+        </button>
+
+        {/* DUGME ZA ŠTAMPU MJESEČNOG IZVEŠTAJA */}
+        <button 
+          onClick={printMonthlyReport}
+          disabled={getMonthFiltered().length === 0}
+          style={{
+            background: '#10B981',
+            color: 'white',
+            border: 'none',
+            padding: '12px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          🖨️ Štampaj Mjesečni Izveštaj
         </button>
 
         <button 
@@ -836,7 +972,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                   textAlign: 'right', 
                   fontWeight: 'bold', 
                   color: '#10B981',
-                    fontSize: '16px',
+                  fontSize: '16px',
                   marginTop: '10px'
                 }}>
                   Ukupno: {format(entry.kesDobit)} €
