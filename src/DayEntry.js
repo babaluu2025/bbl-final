@@ -11,26 +11,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
   const [rashodiText, setRashodiText] = useState('');
   const [kesDobitText, setKesDobitText] = useState('');
   const [pocetnoStanje, setPocetnoStanje] = useState('');
-  const [korekcija, setKorekcija] = useState('');
-
-  // JEDNOSTAVNA funkcija za prenos stanja
-  const prenesiStanje = () => {
-    if (!days || days.length === 0) {
-      alert('ℹ️ Nema prethodnih dana');
-      return;
-    }
-    
-    // Uzmi samo poslednji dan po ID-u (najnoviji)
-    const sortedDays = [...days].sort((a, b) => b.id - a.id);
-    const lastDay = sortedDays[0];
-    
-    if (lastDay && lastDay.stanje) {
-      setPocetnoStanje(lastDay.stanje.toString());
-      alert(`✅ Stanje preneseno: ${lastDay.stanje.toFixed(2)} €\n\nDatum: ${lastDay.datum}`);
-    } else {
-      alert('❌ Nema stanja u poslednjem danu');
-    }
-  };
+  const [uplacenPazar, setUplacenPazar] = useState(''); // NOVO POLJE
 
   // Pomoćna funkcija za formatiranje datuma za input
   const formatDateForInput = (dan, mjesec, godina) => {
@@ -57,6 +38,30 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     return { dan: '', mjesec: '', godina: '' };
   };
 
+  // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE
+  const getPreviousDayCashState = () => {
+    if (!days || days.length === 0) return 0;
+    
+    // Pronađi najnoviji datum (najveći datum)
+    let latestDate = new Date(0);
+    let latestDay = null;
+    
+    days.forEach(day => {
+      try {
+        const [dan, mjesec, godina] = day.datum.split('.');
+        const dayDate = new Date(godina, mjesec - 1, dan);
+        if (dayDate > latestDate) {
+          latestDate = dayDate;
+          latestDay = day;
+        }
+      } catch (error) {
+        console.error("Greška pri parsiranju datuma:", day.datum);
+      }
+    });
+    
+    return latestDay?.stanje || 0;
+  };
+
   useEffect(() => {
     if (initialData) {
       // EDIT MODE - koristi postojeće vrijednosti
@@ -73,15 +78,21 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       setRashodiText(initialData.rashodiText || '');
       setKesDobitText(initialData.kesDobitText || '');
       setPocetnoStanje(initialData.pocetnoStanje?.toString() || '');
-      setKorekcija(initialData.korekcija?.toString() || '');
+      setUplacenPazar(initialData.uplacenPazar?.toString() || ''); // NOVO POLJE
     } else {
-      // NOVI DAN - postavi današnji datum
+      // NOVI DAN - automatski postavi početno stanje iz prethodnog dana
       const today = new Date();
       setDan(today.getDate().toString());
       setMjesec((today.getMonth() + 1).toString());
       setGodina(today.getFullYear().toString());
+      
+      // AUTOMATSKO POSTAVLJANJE POČETNOG STANJA IZ PRETHODNOG DANA
+      const previousCashState = getPreviousDayCashState();
+      if (previousCashState > 0) {
+        setPocetnoStanje(previousCashState.toString());
+      }
     }
-  }, [initialData]);
+  }, [initialData, days]);
 
   const parseLines = (text, forcePositive = false) => {
     return text
@@ -110,13 +121,12 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
 
     const fisk = parseFloat(fiskalni.replace(',', '.')) || 0;
     const sun = parseFloat(sunmi.replace(',', '.')) || 0;
-    const korek = parseFloat(korekcija.replace(',', '.')) || 0;
     const pocStanje = parseFloat(pocetnoStanje.replace(',', '.')) || 0;
+    const uplacenPazarValue = parseFloat(uplacenPazar.replace(',', '.')) || 0; // NOVO POLJE
 
     const stvarnaUplata = round(fisk - virmani);
     const rezultat = round(sun + kesDobit - rashodi);
-    const stanje = round(pocStanje + rezultat + korek);
-    const uplacenPazar = round((fisk + sun + kesDobit) - (virmani + rashodi));
+    const stanje = round(pocStanje + rezultat); // UKLONJENA KOREKCIJA
     const pazar = round(fisk + sun);
 
     const danObj = {
@@ -131,10 +141,9 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       kesDobit,
       stvarnaUplata,
       rezultat,
-      uplacenPazar,
+      uplacenPazar: uplacenPazarValue, // NOVO POLJE
       pazar,
       pocetnoStanje: pocStanje,
-      korekcija: korek,
       stanje,
     };
 
@@ -151,7 +160,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       setRashodiText('');
       setKesDobitText('');
       setPocetnoStanje('');
-      setKorekcija('');
+      setUplacenPazar('');
     }
   };
 
@@ -178,7 +187,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
         </div>
       )}
 
-      {/* DUGME ZA PRENOS STANJA - VELIKO I VIDLJIVO */}
+      {/* DUGME ZA PRENOS STANJA */}
       {!initialData && days && days.length > 0 && (
         <div style={{
           marginBottom: '15px',
@@ -188,13 +197,17 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
           borderRadius: '10px',
           textAlign: 'center'
         }}>
-          <h3 style={{ margin: '0 0 10px 0', color: '#D97706' }}>💡 Prenos Stanja Kase</h3>
-          <p style={{ margin: '0 0 15px 0', fontSize: '14px' }}>
-            Kliknite da prenesete stanje iz poslednjeg dana
-          </p>
           <button 
             type="button"
-            onClick={prenesiStanje}
+            onClick={() => {
+              const previousCash = getPreviousDayCashState();
+              if (previousCash > 0) {
+                setPocetnoStanje(previousCash.toString());
+                alert(`✅ Stanje preneseno: ${previousCash.toFixed(2)} €`);
+              } else {
+                alert('ℹ️ Nema prethodnog dana sa stanjem');
+              }
+            }}
             style={{
               background: '#10B981',
               color: 'white',
@@ -254,26 +267,31 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       <label>💵 Sunmi (gotovina iz aparata):</label>
       <input type="text" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
 
+      <label>💰 Keš dobit (npr. +200 mirko):</label>
+      <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
+
       <label>🏦 Viza i Fakture (npr. +10 viza):</label>
       <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
 
       <label>💸 Rashodi (npr. -100 gorivo):</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
 
-      <label>💰 Keš dobit (npr. +200 mirko):</label>
-      <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
+      {/* NOVO POLJE - UPLAĆEN PAZAR */}
+      <label>💳 Uplačen pazar:</label>
+      <input 
+        type="text" 
+        value={uplacenPazar} 
+        onChange={(e) => setUplacenPazar(e.target.value)} 
+        placeholder="Unesite uplaćeni pazar"
+      />
 
       <label>📦 Početno stanje kase:</label>
       <input 
         type="text" 
         value={pocetnoStanje} 
         onChange={(e) => setPocetnoStanje(e.target.value)} 
-        placeholder="Kliknite gore da prenesete stanje"
-        style={{ width: '100%', padding: '10px', fontSize: '16px', marginBottom: '15px' }}
+        placeholder="Automatski popunjeno iz prethodnog dana"
       />
-
-      <label>✏️ Korekcija kase (npr. +2000 dodavanje):</label>
-      <input type="text" value={korekcija} onChange={(e) => setKorekcija(e.target.value)} />
 
       <button type="submit" style={{ 
         marginTop: '15px', 
