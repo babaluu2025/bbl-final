@@ -40,23 +40,23 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
 
   // FUNKCIJA ZA AUTOMATSKO PRONALAŽENJE PRETHODNOG STANJA KASE - POPRAVLJENA
   const getPreviousDayCashState = () => {
-    if (!days || days.length === 0) return 0;
+    if (!days || days.length === 0) {
+      console.log("📭 Nema dana u sistemu");
+      return 0;
+    }
     
     console.log("🔍 Tražim stanje iz prethodnog dana...");
-    console.log("Dostupni dani:", days);
+    console.log("Dostupni dani:", days.map(d => ({ datum: d.datum, stanje: d.stanje })));
     
-    // Sortiraj po datumu - najnoviji prvi
+    // Sortiraj po ID-u (najnoviji prvi) - JEDNOSTAVNIJE I SIGURNIJE
     const sortedDays = [...days].sort((a, b) => {
-      const parseDate = (dateStr) => {
-        if (!dateStr) return new Date(0);
-        const [dan, mjesec, godina] = dateStr.split('.');
-        return new Date(godina, mjesec - 1, dan);
-      };
-      return parseDate(b.datum) - parseDate(a.datum);
+      const idA = parseInt(a.id);
+      const idB = parseInt(b.id);
+      return idB - idA;
     });
     
     const latestDay = sortedDays[0];
-    console.log("📅 Najnoviji dan:", latestDay?.datum, "Stanje:", latestDay?.stanje);
+    console.log("📅 Najnoviji dan:", latestDay?.datum, "Stanje:", latestDay?.stanje, "ID:", latestDay?.id);
     
     return latestDay?.stanje || 0;
   };
@@ -87,19 +87,19 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       
       // AUTOMATSKO POSTAVLJANJE POČETNOG STANJA IZ PRETHODNOG DANA
       const previousCashState = getPreviousDayCashState();
-      console.log("💰 Automatsko stanje:", previousCashState);
+      console.log("💰 Automatsko stanje za novi dan:", previousCashState);
       if (previousCashState > 0) {
         setPocetnoStanje(previousCashState.toString());
       }
     }
-  }, [initialData, days]);
+  }, [initialData]);
 
   // DODAJ OVO: Ažuriraj početno stanje kada se days promijeni
   useEffect(() => {
     if (!initialData && days && days.length > 0) {
       const previousCashState = getPreviousDayCashState();
-      console.log("🔄 Ažuriranje stanja:", previousCashState);
-      if (previousCashState > 0) {
+      console.log("🔄 Ažuriranje stanja zbog promjene days:", previousCashState);
+      if (previousCashState > 0 && !pocetnoStanje) {
         setPocetnoStanje(previousCashState.toString());
       }
     }
@@ -140,8 +140,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     const stvarnaUplata = round(fisk - virmani);
     const rezultat = round(sun + kesDobit - rashodi);
     const stanje = round(pocStanje + rezultat);
-    // "Keš na dan" se računa kao sun + kesDobit - ovo je ono što je ranije bilo "uplačen pazar"
-    const kesNaDan = round(sun + kesDobit);
+    const kesNaDan = round(sun + kesDobit); // OVO JE BITNO - KES NA DAN
 
     console.log("🧮 Kalkulacije:", {
       fisk, sun, virmani, rashodi, kesDobit, pocStanje,
@@ -164,7 +163,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       pazar,
       pocetnoStanje: pocStanje,
       stanje,
-      kesNaDan, // DODAJEMO OVO POLJE ZA PRIKAZ
+      kesNaDan: kesNaDan, // OBAVEZNO DODAJEMO
     };
 
     onSave(danObj);
@@ -183,6 +182,21 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       setUplacenPazar('');
     }
   };
+
+  // FUNKCIJA ZA PRENOS STANJA - POPRAVLJENA
+  const handlePrenosStanja = () => {
+    const previousCash = getPreviousDayCashState();
+    console.log("🔄 Prenos stanja:", previousCash);
+    
+    if (previousCash > 0) {
+      setPocetnoStanje(previousCash.toString());
+      alert(`✅ Stanje preneseno: ${previousCash.toFixed(2)} €\n\nSada možete sačuvati dan.`);
+    } else {
+      alert('ℹ️ Nema prethodnog dana sa stanjem');
+    }
+  };
+
+  const previousCashState = getPreviousDayCashState();
 
   return (
     <form onSubmit={handleSubmit}>
@@ -207,7 +221,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
         </div>
       )}
 
-      {/* DUGME ZA PRENOS STANJA */}
+      {/* DUGME ZA PRENOS STANJA - POPRAVLJENO */}
       {!initialData && days && days.length > 0 && (
         <div style={{
           marginBottom: '15px',
@@ -218,19 +232,11 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
           textAlign: 'center'
         }}>
           <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#92400E' }}>
-            Trenutno stanje iz prethodnog dana: <strong>{getPreviousDayCashState().toFixed(2)} €</strong>
+            Trenutno stanje iz prethodnog dana: <strong>{previousCashState.toFixed(2)} €</strong>
           </p>
           <button 
             type="button"
-            onClick={() => {
-              const previousCash = getPreviousDayCashState();
-              if (previousCash > 0) {
-                setPocetnoStanje(previousCash.toString());
-                alert(`✅ Stanje preneseno: ${previousCash.toFixed(2)} €`);
-              } else {
-                alert('ℹ️ Nema prethodnog dana sa stanjem');
-              }
-            }}
+            onClick={handlePrenosStanja}
             style={{
               background: '#10B981',
               color: 'white',
