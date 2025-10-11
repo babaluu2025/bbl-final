@@ -32,7 +32,7 @@ function App() {
     }
   }, []);
 
-  // Provera autentifikacije pri učitavanju
+  // Provera autentifikacije pri učitavanju - BEZ AUTOMATSKOG UČITAVANJA
   useEffect(() => {
     const initAuth = async () => {
       if (checkRedirectAuth()) {
@@ -55,12 +55,13 @@ function App() {
     initAuth();
   }, []);
 
-  // Učitavanje podataka sa Drive-a
+  // Učitavanje podataka sa Drive-a - SAMO NA ZAHTEV
   const loadDataFromDrive = async () => {
     if (hasLocalData && days.length > 0) {
       const confirmLoad = window.confirm(
         "🚨 PAŽNJA! 🚨\n\nImate lokalno sačuvane podatke.\nUčitavanje sa Drive-a će ZAMENITI vaše trenutne podatke.\n\nDa li želite da nastavite?"
       );
+      
       if (!confirmLoad) {
         showSyncStatus("❌ Učitavanje otkazano", "info");
         return;
@@ -92,7 +93,7 @@ function App() {
     }
   };
 
-  // Snimanje podataka na Drive
+  // Snimanje podataka na Drive - SAMO NA ZAHTEV
   const saveDataToDrive = async () => {
     if (days.length === 0) {
       showSyncStatus("ℹ️ Nema podataka za čuvanje", "info");
@@ -111,18 +112,24 @@ function App() {
     }
   };
 
-  // Čuvanje novog dana
+  // Čuvanje novog dana - SAMO LOKALNO
   const handleSave = async (dan) => {
     let newDays;
 
+    // OBAVEZNO DODAJ KES NA DAN AKO NE POSTOJI
+    const danSaKesNaDan = {
+      ...dan,
+      kesNaDan: dan.kesNaDan !== undefined ? dan.kesNaDan : (dan.sunmi + dan.kesDobit)
+    };
+
     if (editingDay) {
       newDays = days.map(day => 
-        day.id === editingDay.id ? { ...dan, id: editingDay.id } : day
+        day.id === editingDay.id ? { ...danSaKesNaDan, id: editingDay.id } : day
       );
       setEditingDay(null);
     } else {
       const newDay = { 
-        ...dan, 
+        ...danSaKesNaDan, 
         id: Date.now().toString(),
         createdAt: new Date().toISOString()
       };
@@ -136,7 +143,7 @@ function App() {
     showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "success");
   };
 
-  // Brisanje dana
+  // Brisanje dana - SAMO LOKALNO
   const handleDeleteDay = async (dayId) => {
     const newDays = days.filter(day => day.id !== dayId);
     setDays(newDays);
@@ -187,11 +194,9 @@ function App() {
         navigator.clipboard.writeText(lastDay.stanje.toString()).then(() => {
           alert(`📋 Stanje kopirano: ${lastDay.stanje.toFixed(2)} €\n\nDatum: ${lastDay.datum}\n\nSada idite na "Unos dana" i nalepite u polje "Početno stanje kase"`);
         }).catch(() => {
-          // Fallback ako clipboard ne radi
           alert(`📋 Stanje: ${lastDay.stanje.toFixed(2)} €\n\nDatum: ${lastDay.datum}\n\nZapišite ovaj broj i unesite ga ručno u "Početno stanje kase"`);
         });
       } else {
-        // Fallback za browsere koji ne podržavaju clipboard API
         alert(`📋 Stanje: ${lastDay.stanje.toFixed(2)} €\n\nDatum: ${lastDay.datum}\n\nZapišite ovaj broj i unesite ga ručno u "Početno stanje kase"`);
       }
     } else {
