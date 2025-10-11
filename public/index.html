@@ -1,123 +1,21 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon-192.png" />
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#2563eb" />
-    <meta name="description" content="BBL Billing App - Upravljanje dnevnim prometom i kasom" />
-    
-    <!-- PWA meta tags za Android -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="BBL Billing">
-    <meta name="msapplication-TileColor" content="#2563eb">
-    <meta name="msapplication-tap-highlight" content="no">
-    <meta name="application-name" content="BBL Billing">
-    
-    <!-- Open Graph meta tags -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="BBL Billing App">
-    <meta property="og:description" content="Aplikacija za upravljanje dnevnim prometom i kasom">
-    <meta property="og:site_name" content="BBL Billing">
-    
-    <!-- Twitter meta tags -->
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="BBL Billing App">
-    <meta name="twitter:description" content="Aplikacija za upravljanje dnevnim prometom i kasom">
-    
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BBL Billing App</title>
-    
-    <style>
-      /* Loading screen style */
-      .loading-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        font-family: Arial, sans-serif;
-        z-index: 9999;
-      }
-      
-      .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-top: 4px solid white;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 20px;
-      }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      .loading-text {
-        font-size: 18px;
-        font-weight: bold;
-      }
-    </style>
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Tab ikonica (favicon) -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+
+    <!-- Tema boja za mobilne browsere -->
+    <meta name="theme-color" content="#2d89ef" />
   </head>
   <body>
-    <noscript>
-      <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
-        <h1>JavaScript je obavezan</h1>
-        <p>Da biste koristili BBL Billing App, morate omogućiti JavaScript u svom browseru.</p>
-      </div>
-    </noscript>
-    
-    <!-- Loading screen -->
-    <div id="loading-screen" class="loading-screen">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">BBL Billing App se učitava...</div>
-    </div>
-    
+    <noscript>Morate omogućiti JavaScript da bi aplikacija radila.</noscript>
     <div id="root"></div>
-    
-    <script>
-      // Sakrij loading screen kada se React aplikacija učita
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          const loadingScreen = document.getElementById('loading-screen');
-          if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            loadingScreen.style.transition = 'opacity 0.5s ease';
-            setTimeout(function() {
-              loadingScreen.style.display = 'none';
-            }, 500);
-          }
-        }, 1000);
-      });
-      
-      // PWA instalacija prompt
-      let deferredPrompt;
-      
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        console.log('PWA instalacija dostupna');
-        
-        // Možete prikazati svoj instalacioni button ovdje
-        // showInstallPromotion();
-      });
-      
-      window.addEventListener('appinstalled', () => {
-        console.log('PWA uspješno instaliran');
-        deferredPrompt = null;
-      });
-    </script>
   </body>
 </html>

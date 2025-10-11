@@ -22,36 +22,6 @@ function App() {
   const [editingDay, setEditingDay] = useState(null);
   const [hasLocalData, setHasLocalData] = useState(false);
 
-  // PWA INSTALACIJA
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-
-  useEffect(() => {
-    // Detektuj kada se može instalirati PWA
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setShowInstallButton(false);
-      }
-      setDeferredPrompt(null);
-    }
-  };
-
   // Učitaj lokalne podatke pri startu
   useEffect(() => {
     const localDays = localStorage.getItem('bbl_days');
@@ -62,7 +32,7 @@ function App() {
     }
   }, []);
 
-  // Provera autentifikacije pri učitavanju
+  // Provera autentifikacije pri učitavanju - BEZ AUTOMATSKOG UČITAVANJA
   useEffect(() => {
     const initAuth = async () => {
       if (checkRedirectAuth()) {
@@ -85,7 +55,7 @@ function App() {
     initAuth();
   }, []);
 
-  // Učitavanje podataka sa Drive-a
+  // Učitavanje podataka sa Drive-a - SAMO NA ZAHTEV
   const loadDataFromDrive = async () => {
     if (hasLocalData && days.length > 0) {
       const confirmLoad = window.confirm(
@@ -123,7 +93,7 @@ function App() {
     }
   };
 
-  // Snimanje podataka na Drive
+  // Snimanje podataka na Drive - SAMO NA ZAHTEV
   const saveDataToDrive = async () => {
     if (days.length === 0) {
       showSyncStatus("ℹ️ Nema podataka za čuvanje", "info");
@@ -142,7 +112,7 @@ function App() {
     }
   };
 
-  // Čuvanje novog dana
+  // Čuvanje novog dana - SAMO LOKALNO
   const handleSave = async (dan) => {
     let newDays;
 
@@ -173,7 +143,7 @@ function App() {
     showSyncStatus(editingDay ? "✅ Dan ažuriran lokalno" : "✅ Dan sačuvan lokalno", "success");
   };
 
-  // Brisanje dana
+  // Brisanje dana - SAMO LOKALNO
   const handleDeleteDay = async (dayId) => {
     const newDays = days.filter(day => day.id !== dayId);
     setDays(newDays);
@@ -207,15 +177,16 @@ function App() {
     showSyncStatus("✅ Uspešno odjavljen", "success");
   };
 
-  // FUNKCIJA ZA KOPIRANJE STANJA
+  // FUNKCIJA ZA KOPIRANJE STANJA - DODATA
   const kopirajStanje = () => {
     if (days.length === 0) {
       alert('ℹ️ Nema unesenih dana');
       return;
     }
     
-    // Uzmi poslednji dan
-    const lastDay = days[days.length - 1];
+    // Uzmi poslednji dan po ID-u (najnoviji)
+    const sortedDays = [...days].sort((a, b) => b.id - a.id);
+    const lastDay = sortedDays[0];
     
     if (lastDay && lastDay.stanje) {
       // Pokušaj kopiranja u clipboard
@@ -365,7 +336,7 @@ function App() {
             </button>
           </Link>
           
-          {/* DUGME ZA KOPIRANJE STANJA */}
+          {/* DUGME ZA KOPIRANJE STANJA - DODATO */}
           <button 
             onClick={kopirajStanje}
             disabled={days.length === 0}
@@ -381,24 +352,6 @@ function App() {
           >
             📋 Kopiraj Stanje
           </button>
-          
-          {/* DUGME ZA INSTALACIJU PWA */}
-          {showInstallButton && (
-            <button 
-              onClick={handleInstallClick}
-              style={{
-                background: "#8B5CF6",
-                color: "white", 
-                border: "none",
-                padding: "12px 20px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontWeight: "bold"
-              }}
-            >
-              📱 Instaliraj App
-            </button>
-          )}
           
           {editingDay && (
             <button 

@@ -1,5 +1,5 @@
 {
-  "short_name": "BBL Billing",
+  "short_name": "BBL",
   "name": "BBL Billing App",
   "icons": [
     {
@@ -15,6 +15,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#2563eb",
+  "theme_color": "#2d89ef",
   "background_color": "#ffffff"
 }
