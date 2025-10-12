@@ -12,24 +12,33 @@ root.render(
   </React.StrictMode>
 );
 
-// PWA instalacija - OBAVEZNO REGISTRUJ SERVICE WORKER
+// ✅ Registracija Service Workera
 serviceWorkerRegistration.register();
 
-// Dodajte ovaj kod za PWA install prompt
+// ✅ Instalacioni prompt
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  console.log('PWA can be installed!');
-  
-  // Možete i dispatch-ovati custom event ako treba
+  console.log('📱 PWA can be installed!');
+
+  // Obaveštava App komponentu da može prikazati dugme
   window.dispatchEvent(new CustomEvent('pwaInstallAvailable', { detail: e }));
 });
 
-// Debug info
-console.log('PWA Service Worker registration started');
+// ✅ Događaj za ručno pokretanje instalacije (iz App.jsx)
+window.addEventListener('pwaInstall', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User install choice: ${outcome}`);
+    deferredPrompt = null;
+  }
+});
+
+// ✅ Debug info
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.ready.then(registration => {
-    console.log('Service Worker ready:', registration);
+  navigator.serviceWorker.ready.then((reg) => {
+    console.log('✅ Service Worker ready:', reg);
   });
 }
