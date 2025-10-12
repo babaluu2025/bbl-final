@@ -22,16 +22,34 @@ function App() {
   const [editingDay, setEditingDay] = useState(null);
   const [hasLocalData, setHasLocalData] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
 
-  // PWA INSTALACIJA - DODATO
+  // PWA INSTALACIJA - POBOLJŠANO
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setInstallPrompt(e);
-      console.log('PWA can be installed!');
+      setShowInstallButton(true);
+      console.log('PWA install prompt available');
+    };
+
+    // Provjera da li je app već instalirana
+    const checkIfInstalled = () => {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('App je već instalirana');
+        setShowInstallButton(false);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', () => {
+      console.log('App je uspješno instalirana');
+      setShowInstallButton(false);
+      setInstallPrompt(null);
+      showSyncStatus("✅ Aplikacija instalirana!", "success");
+    });
+
+    checkIfInstalled();
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -39,14 +57,27 @@ function App() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!installPrompt) return;
+    if (!installPrompt) {
+      showSyncStatus("❌ Instalacija nije dostupna", "error");
+      return;
+    }
     
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setInstallPrompt(null);
-      showSyncStatus("✅ Aplikacija uspješno instalirana!", "success");
+    try {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      
+      console.log(`Korisnik je ${outcome} instalaciju`);
+      
+      if (outcome === 'accepted') {
+        setInstallPrompt(null);
+        setShowInstallButton(false);
+        showSyncStatus("✅ Aplikacija se instalira...", "success");
+      } else {
+        showSyncStatus("❌ Instalacija otkazana", "info");
+      }
+    } catch (error) {
+      console.error('Greška pri instalaciji:', error);
+      showSyncStatus("❌ Greška pri instalaciji", "error");
     }
   };
 
@@ -54,13 +85,17 @@ function App() {
   useEffect(() => {
     const localDays = localStorage.getItem('bbl_days');
     if (localDays) {
-      const parsedDays = JSON.parse(localDays);
-      setDays(parsedDays);
-      setHasLocalData(parsedDays.length > 0);
+      try {
+        const parsedDays = JSON.parse(localDays);
+        setDays(parsedDays);
+        setHasLocalData(parsedDays.length > 0);
+      } catch (error) {
+        console.error('Greška pri učitavanju lokalnih podataka:', error);
+      }
     }
   }, []);
 
-  // Provera autentifikacije pri učitavanju - BEZ AUTOMATSKOG UČITAVANJA
+  // Provera autentifikacije pri učitavanju
   useEffect(() => {
     const initAuth = async () => {
       if (checkRedirectAuth()) {
@@ -205,7 +240,7 @@ function App() {
     showSyncStatus("✅ Uspešno odjavljen", "success");
   };
 
-  // FUNKCIJA ZA KOPIRANJE STANJA - DODATA
+  // FUNKCIJA ZA KOPIRANJE STANJA
   const kopirajStanje = () => {
     if (days.length === 0) {
       alert('ℹ️ Nema unesenih dana');
@@ -244,20 +279,23 @@ function App() {
       <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
         <h1>📘 BBL Billing App {editingDay && " - ✏️ Edit Mode"}</h1>
 
-        {/* PWA INSTALACIJA DUGME - DODATO */}
-        {installPrompt && (
+        {/* PWA INSTALACIJA DUGME - POBOLJŠANO */}
+        {showInstallButton && (
           <div style={{
             marginBottom: '20px',
             padding: '15px',
-            background: '#10B981',
+            background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
             color: 'white',
-            borderRadius: '10px',
+            borderRadius: '12px',
             textAlign: 'center',
-            border: '2px solid #059669'
+            border: '2px solid #047857',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
           }}>
-            <h3 style={{ margin: '0 0 10px 0' }}>📱 Instaliraj Aplikaciju</h3>
-            <p style={{ margin: '0 0 15px 0', fontSize: '14px' }}>
-              Instaliraj BBL Billing za brži pristup!
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>
+              📱 Instaliraj BBL Billing
+            </h3>
+            <p style={{ margin: '0 0 15px 0', fontSize: '14px', opacity: 0.9 }}>
+              Instaliraj aplikaciju za brži pristup i rad offline!
             </p>
             <button 
               onClick={handleInstallClick}
@@ -265,14 +303,40 @@ function App() {
                 background: 'white',
                 color: '#10B981',
                 border: 'none',
-                padding: '10px 20px',
-                borderRadius: '5px',
+                padding: '12px 24px',
+                borderRadius: '8px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                fontSize: '16px'
+                fontSize: '16px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.background = '#f1f5f9';
+                e.target.style.transform = 'translateY(-2px)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = 'white';
+                e.target.style.transform = 'translateY(0)';
               }}
             >
-              🚀 Instaliraj Sada
+              🚀 Instaliraj Aplikaciju
+            </button>
+            <button 
+              onClick={() => setShowInstallButton(false)}
+              style={{
+                background: 'transparent',
+                color: 'white',
+                border: '1px solid white',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                marginLeft: '10px',
+                opacity: 0.8
+              }}
+            >
+              ❌ Ne sada
             </button>
           </div>
         )}
