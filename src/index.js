@@ -1,3 +1,4 @@
+// src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -24,3 +25,11 @@ window.addEventListener('beforeinstallprompt', (e) => {
   // Možete i dispatch-ovati custom event ako treba
   window.dispatchEvent(new CustomEvent('pwaInstallAvailable', { detail: e }));
 });
+
+// Debug info
+console.log('PWA Service Worker registration started');
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then(registration => {
+    console.log('Service Worker ready:', registration);
+  });
+}
