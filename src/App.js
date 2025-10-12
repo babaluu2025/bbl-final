@@ -30,6 +30,7 @@ function App() {
       e.preventDefault();
       setInstallPrompt(e);
       setShowInstallButton(true);
+      window.deferredPrompt = e; // Dodato za globalni access
       console.log('PWA install prompt available');
     };
 
@@ -40,6 +41,21 @@ function App() {
         setShowInstallButton(false);
       }
     };
+
+    // Forsiraj PWA instalaciju preko URL parametra
+    const url = new URL(window.location);
+    if (url.searchParams.get('install') === 'true') {
+      setTimeout(() => {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then(() => {
+            // Pokreni instalaciju
+            if (window.deferredPrompt) {
+              window.deferredPrompt.prompt();
+            }
+          });
+        }
+      }, 2000);
+    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', () => {
@@ -278,6 +294,32 @@ function App() {
     <Router>
       <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
         <h1>📘 BBL Billing App {editingDay && " - ✏️ Edit Mode"}</h1>
+
+        {/* FORSIRAJ INSTALACIJU DUGME - DODATO */}
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <button 
+            onClick={() => {
+              window.location.href = window.location.origin + '?install=true';
+            }}
+            style={{
+              background: '#FF6B35',
+              color: 'white',
+              border: 'none',
+              padding: '15px 25px',
+              borderRadius: '10px',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              width: '100%',
+              marginBottom: '10px'
+            }}
+          >
+            🚀 FORSIRAJ INSTALACIJU PWA
+          </button>
+          <small style={{ color: '#666' }}>
+            Kliknite pa osvježite stranicu ako instalacija ne počne automatski
+          </small>
+        </div>
 
         {/* PWA INSTALACIJA DUGME - POBOLJŠANO */}
         {showInstallButton && (
