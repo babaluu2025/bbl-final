@@ -157,8 +157,6 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     }
   };
 
-  const previousCashState = getPreviousDayCashState();
-
   return (
     <form onSubmit={handleSubmit}>
       <h2>📘 {initialData ? '✏️ Izmena dana' : 'Unos novog dana'}</h2>
@@ -182,32 +180,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
         </div>
       )}
 
-      {/* PRIKAZ TRENUTNOG STANJA - UMESTO PRENOSA STANJA */}
-      {!initialData && days && days.length > 0 && (
-        <div style={{
-          marginBottom: '15px',
-          padding: '15px',
-          background: '#FFFBEB',
-          border: '3px solid #F59E0B',
-          borderRadius: '10px',
-          textAlign: 'center'
-        }}>
-          <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#92400E' }}>
-            Trenutno stanje iz prethodnog dana: 
-          </p>
-          <div style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: '#D97706',
-            marginBottom: '10px'
-          }}>
-            {previousCashState.toFixed(2)} €
-          </div>
-          <small style={{ color: '#92400E' }}>
-            Ovo stanje je automatski postavljeno u polje "Početno stanje kase"
-          </small>
-        </div>
-      )}
+      {/* UKLONJENA SEKCIJA "TRENUTNO STANJE IZ PRETHODNOG DANA" */}
 
       <OcrUpload
         onExtract={(data) => {
