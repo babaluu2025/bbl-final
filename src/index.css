@@ -1,163 +1,64 @@
-/* src/index.css */
-/* ⚡ Modern, clean, ultra-light design — optimizovano za brzinu */
-
 body {
   margin: 0;
-  padding: 0;
-  font-family: "Inter", Arial, sans-serif;
-  background: linear-gradient(180deg, #f9fafb 0%, #eef2ff 100%);
-  color: #222;
-  min-height: 100vh;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f8;
 }
 
-.app-wrapper {
-  max-width: 520px;
-  margin: 0 auto;
-  padding: 12px;
+h1, h2, h3 {
+  color: #2c3e50;
 }
 
-/* ✅ Zeleni blok - Google Drive prijava/sinhronizacija */
-.status-box {
-  background: #ecfdf5;
-  border: 2px solid #10b981;
-  border-radius: 14px;
-  padding: 12px 14px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
-  transition: box-shadow 0.2s ease;
-}
-
-.status-box:hover {
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-}
-
-.status-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.email-text {
+label {
   font-weight: bold;
-  color: #065f46;
+  display: block;
+  margin-top: 10px;
 }
 
-.local-warning {
-  margin-top: 6px;
-  padding: 6px;
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  border-radius: 6px;
-  font-size: 12px;
-  text-align: center;
-}
-
-.button-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-/* ✅ Žuti blok - Kopiraj stanje */
-.balance-box {
-  background: #fffbeb;
-  border: 2px solid #f59e0b;
-  border-radius: 14px;
-  padding: 14px;
-  text-align: center;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
-  transition: box-shadow 0.2s ease;
-}
-
-.balance-box:hover {
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
-}
-
-.balance-box h3 {
-  color: #92400e;
-  margin: 0 0 8px 0;
-  font-size: 16px;
-}
-
-.balance-value {
-  font-size: 22px;
-  font-weight: bold;
-  color: #d97706;
-  margin-bottom: 8px;
-}
-
-.balance-note {
-  font-size: 11px;
-  color: #92400e;
-  margin: 6px 0 0 0;
-}
-
-/* ✅ Dugmad */
-.btn {
-  border: none;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-weight: bold;
-  cursor: pointer;
-  color: white;
-  transition: all 0.2s ease;
-  flex: 1;
-  font-size: 13px;
-}
-
-.btn.green {
-  background: #10b981;
-}
-
-.btn.green:hover {
-  background: #059669;
-  transform: translateY(-1px);
-}
-
-.btn.blue {
-  background: #3b82f6;
-}
-
-.btn.blue:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
-.btn.logout {
-  background: #ef4444;
-}
-
-.btn.logout:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-}
-
-.btn.wide {
+input, textarea, button {
+  display: block;
   width: 100%;
+  max-width: 400px;
+  margin: 5px 0 15px 0;
+  padding: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
 }
 
-/* ✅ Efekat klika (ne remeti performanse) */
-.btn:active {
-  transform: scale(0.98);
+textarea {
+  height: 80px;
+  resize: vertical;
 }
 
-/* ✅ Responsivnost */
-@media (max-width: 480px) {
-  .app-wrapper {
-    padding: 8px;
-  }
-  .btn {
-    font-size: 12px;
-    padding: 6px 8px;
-  }
-  .balance-value {
-    font-size: 20px;
-  }
-  .status-box,
-  .balance-box {
-    border-radius: 10px;
-    padding: 10px;
-  }
+button {
+  background-color: #2d89ef;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #1b5fbf;
+}
+
+.app-container {
+  max-width: 800px;
+  margin: auto;
+}
+
+.entries-list {
+  margin-top: 30px;
+}
+
+.entry-box {
+  background-color: white;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  border-radius: 8px;
+}
+
+.entry-result p {
+  margin: 3px 0;
 }
