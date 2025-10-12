@@ -75,6 +75,12 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       setDan(today.getDate().toString());
       setMjesec((today.getMonth() + 1).toString());
       setGodina(today.getFullYear().toString());
+      
+      // Automatski postavi početno stanje iz prethodnog dana
+      const previousCash = getPreviousDayCashState();
+      if (previousCash > 0) {
+        setPocetnoStanje(previousCash.toString());
+      }
     }
   }, [initialData]);
 
@@ -151,18 +157,6 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     }
   };
 
-  // FUNKCIJA ZA PRENOS STANJA
-  const handlePrenosStanja = () => {
-    const previousCash = getPreviousDayCashState();
-    
-    if (previousCash > 0) {
-      setPocetnoStanje(previousCash.toString());
-      alert(`✅ Stanje preneseno: ${previousCash.toFixed(2)} €`);
-    } else {
-      alert('ℹ️ Nema prethodnog dana sa stanjem');
-    }
-  };
-
   const previousCashState = getPreviousDayCashState();
 
   return (
@@ -188,7 +182,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
         </div>
       )}
 
-      {/* DUGME ZA PRENOS STANJA */}
+      {/* PRIKAZ TRENUTNOG STANJA - UMESTO PRENOSA STANJA */}
       {!initialData && days && days.length > 0 && (
         <div style={{
           marginBottom: '15px',
@@ -199,24 +193,19 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
           textAlign: 'center'
         }}>
           <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#92400E' }}>
-            Trenutno stanje iz prethodnog dana: <strong>{previousCashState.toFixed(2)} €</strong>
+            Trenutno stanje iz prethodnog dana: 
           </p>
-          <button 
-            type="button"
-            onClick={handlePrenosStanja}
-            style={{
-              background: '#10B981',
-              color: 'white',
-              border: 'none',
-              padding: '12px 20px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '14px'
-            }}
-          >
-            📥 PRENESI STANJE
-          </button>
+          <div style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#D97706',
+            marginBottom: '10px'
+          }}>
+            {previousCashState.toFixed(2)} €
+          </div>
+          <small style={{ color: '#92400E' }}>
+            Ovo stanje je automatski postavljeno u polje "Početno stanje kase"
+          </small>
         </div>
       )}
 
@@ -268,7 +257,6 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       <label>💸 Rashodi (npr. -100 gorivo):</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
 
-      {/* PREMIJEŠTENO: Keš dobit ispod rashoda */}
       <label>💰 Keš dobit (npr. +200 mirko):</label>
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
