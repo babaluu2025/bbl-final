@@ -5,26 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BBL Billing App</title>
 
-    <!-- PWA manifest -->
+    <!-- ✅ PWA manifest -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-    <!-- Tab ikonica (favicon) -->
+    <!-- ✅ Favicon -->
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
 
-    <!-- PWA META TAGOVI - DODANO -->
+    <!-- ✅ PWA META TAGOVI -->
     <meta name="theme-color" content="#2563eb" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="BBL Billing" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon-192.png" />
-    
-    <!-- Microsoft Tile Color -->
+
+    <!-- ✅ Microsoft Tile -->
     <meta name="msapplication-TileColor" content="#2563eb" />
     <meta name="msapplication-TileImage" content="%PUBLIC_URL%/icon-144.png" />
-    
   </head>
+
   <body>
     <noscript>Morate omogućiti JavaScript da bi aplikacija radila.</noscript>
     <div id="root"></div>
+
+    <!-- ✅ Dugme za ručnu instalaciju -->
+    <button
+      id="installAppBtn"
+      style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        display: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      "
+    >
+      📱 Instaliraj aplikaciju
+    </button>
+
+    <script>
+      // ✅ Ručni prompt za instalaciju
+      let deferredPrompt;
+      const installBtn = document.getElementById('installAppBtn');
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'block';
+      });
+
+      installBtn.addEventListener('click', async () => {
+        installBtn.style.display = 'none';
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User response: ${outcome}`);
+          deferredPrompt = null;
+        }
+      });
+    </script>
   </body>
 </html>
