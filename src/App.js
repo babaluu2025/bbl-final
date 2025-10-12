@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import DayEntry from "./DayEntry";
 import SummaryView from "./SummaryView";
@@ -21,6 +21,34 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
   const [hasLocalData, setHasLocalData] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  // PWA INSTALACIJA - DODATO
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      console.log('PWA can be installed!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+      showSyncStatus("✅ Aplikacija uspješno instalirana!", "success");
+    }
+  };
 
   // Učitaj lokalne podatke pri startu
   useEffect(() => {
@@ -215,6 +243,39 @@ function App() {
     <Router>
       <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
         <h1>📘 BBL Billing App {editingDay && " - ✏️ Edit Mode"}</h1>
+
+        {/* PWA INSTALACIJA DUGME - DODATO */}
+        {installPrompt && (
+          <div style={{
+            marginBottom: '20px',
+            padding: '15px',
+            background: '#10B981',
+            color: 'white',
+            borderRadius: '10px',
+            textAlign: 'center',
+            border: '2px solid #059669'
+          }}>
+            <h3 style={{ margin: '0 0 10px 0' }}>📱 Instaliraj Aplikaciju</h3>
+            <p style={{ margin: '0 0 15px 0', fontSize: '14px' }}>
+              Instaliraj BBL Billing za brži pristup!
+            </p>
+            <button 
+              onClick={handleInstallClick}
+              style={{
+                background: 'white',
+                color: '#10B981',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '5px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              🚀 Instaliraj Sada
+            </button>
+          </div>
+        )}
 
         {/* Status bar */}
         <div style={{ 
