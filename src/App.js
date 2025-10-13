@@ -60,7 +60,7 @@ const PasswordModal = ({ onConfirm, onCancel, operation }) => {
           color: '#2563eb',
           fontSize: '20px'
         }}>
-          🔐 KONOBARI (14)
+          🔐 POTVRDA
         </h3>
         
         <div style={{
@@ -70,7 +70,7 @@ const PasswordModal = ({ onConfirm, onCancel, operation }) => {
           marginBottom: '20px',
           border: '2px solid #e2e8f0'
         }}>
-          <strong>Potvrda {operation === 'load' ? 'učitavanje' : 'čuvanje'}</strong>
+          <strong>Potvrda {operation === 'load' ? 'učitavanja' : 'čuvanja'}</strong>
           <p style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#666' }}>
             Unesite lozinku za {operation === 'load' ? 'učitavanje' : 'čuvanje'} podataka:
           </p>
@@ -94,22 +94,6 @@ const PasswordModal = ({ onConfirm, onCancel, operation }) => {
             autoFocus
           />
 
-          {/* Lista konobara kao na slici */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '10px',
-            marginBottom: '20px',
-            fontSize: '14px'
-          }}>
-            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>MILOS</div>
-            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>JOVAN</div>
-            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>RANKO</div>
-            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>BALSA</div>
-            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>JAŠKE</div>
-            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>MARKO</div>
-          </div>
-
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               type="button"
@@ -126,7 +110,7 @@ const PasswordModal = ({ onConfirm, onCancel, operation }) => {
                 fontWeight: 'bold'
               }}
             >
-              Otkáži
+              Otkaži
             </button>
             <button
               type="submit"
@@ -142,7 +126,7 @@ const PasswordModal = ({ onConfirm, onCancel, operation }) => {
                 fontWeight: 'bold'
               }}
             >
-              Potvrdí
+              Potvrdi
             </button>
           </div>
         </form>
