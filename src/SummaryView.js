@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function SummaryView({ data, format, printDay }) {
+function SummaryView({ data = [], format = (x) => x, printDay = () => {} }) {
   const [expandedDay, setExpandedDay] = useState(null);
 
   const toggleDay = (date) => {
@@ -23,16 +23,18 @@ function SummaryView({ data, format, printDay }) {
         📅 Dnevni izvještaji
       </h2>
 
-      {data.length === 0 ? (
+      {!data || data.length === 0 ? (
         <p style={{ textAlign: "center", color: "#888" }}>Nema podataka</p>
       ) : (
         <div>
           {data.map((entry, index) => {
-            const dateLabel = new Date(entry.date).toLocaleDateString("sr-Latn-ME", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            });
+            const dateLabel = entry.date
+              ? new Date(entry.date).toLocaleDateString("sr-Latn-ME", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
+              : "Nepoznat datum";
 
             const isOpen = expandedDay === entry.date;
 
@@ -115,7 +117,9 @@ function SummaryView({ data, format, printDay }) {
                           alignItems: "center",
                         }}
                       >
-                        <span style={{ fontWeight: "bold" }}>💼 Početno stanje:</span>
+                        <span style={{ fontWeight: "bold" }}>
+                          💼 Početno stanje:
+                        </span>
                         <span
                           style={{
                             fontWeight: "bold",
