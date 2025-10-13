@@ -14,7 +14,139 @@ import {
   logout
 } from "./googleDrive";
 
-// PasswordModal komponenta
+// Password za pokretanje aplikacije
+const APP_PASSWORD = "2011";
+
+// Komponenta za password pri pokretanju
+const StartupPasswordModal = ({ onPasswordCorrect }) => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (password === APP_PASSWORD) {
+      onPasswordCorrect();
+    } else {
+      setError('❌ Pogrešna šifra!');
+      setPassword('');
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10000,
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '30px',
+        borderRadius: '20px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+        width: '90%',
+        maxWidth: '400px',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          fontSize: '48px',
+          marginBottom: '20px'
+        }}>
+          🔐
+        </div>
+        
+        <h2 style={{ 
+          margin: '0 0 10px 0', 
+          color: '#2563eb',
+          fontSize: '24px'
+        }}>
+          BBL Billing App
+        </h2>
+        
+        <p style={{ 
+          margin: '0 0 25px 0', 
+          color: '#666',
+          fontSize: '16px'
+        }}>
+          Unesite šifru za pristup aplikaciji
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="Unesite šifru..."
+            style={{
+              width: '100%',
+              padding: '15px',
+              fontSize: '18px',
+              border: error ? '2px solid #EF4444' : '2px solid #e2e8f0',
+              borderRadius: '10px',
+              marginBottom: '15px',
+              textAlign: 'center',
+              outline: 'none'
+            }}
+            autoFocus
+          />
+
+          {error && (
+            <div style={{
+              color: '#EF4444',
+              fontSize: '14px',
+              marginBottom: '15px',
+              fontWeight: 'bold'
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            style={{
+              width: '100%',
+              background: '#2563eb',
+              color: 'white',
+              border: 'none',
+              padding: '15px',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}
+          >
+            🔓 Unesi u Aplikaciju
+          </button>
+        </form>
+
+        <div style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: '#f8f9fa',
+          borderRadius: '10px',
+          fontSize: '12px',
+          color: '#666'
+        }}>
+          <strong>BBL Billing System</strong><br/>
+          Verzija 2.0
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// PasswordModal komponenta za Google Drive
 const PasswordModal = ({ onConfirm, onCancel, operation }) => {
   const [password, setPassword] = useState('');
   
@@ -143,7 +275,8 @@ function App() {
   const [editingDay, setEditingDay] = useState(null);
   const [hasLocalData, setHasLocalData] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [pendingOperation, setPendingOperation] = useState(null); // 'load' ili 'save'
+  const [pendingOperation, setPendingOperation] = useState(null);
+  const [appUnlocked, setAppUnlocked] = useState(false);
 
   // Učitaj lokalne podatke
   useEffect(() => {
@@ -312,95 +445,116 @@ function App() {
   return (
     <Router>
       <div style={{ padding: "10px", maxWidth: "800px", margin: "0 auto" }}>
-        {/* Password Modal */}
-        {showPasswordModal && (
-          <PasswordModal
-            operation={pendingOperation}
-            onConfirm={handlePasswordConfirm}
-            onCancel={handlePasswordCancel}
-          />
+        {/* STARTUP PASSWORD MODAL - prikazuje se samo ako app nije otključana */}
+        {!appUnlocked && (
+          <StartupPasswordModal onPasswordCorrect={() => setAppUnlocked(true)} />
         )}
 
-        {/* GORNJI BLOK - PRIJAVA, UČITAJ, SAČUVAJ */}
-        <div style={{ 
-          marginBottom: "10px", 
-          padding: "10px", 
-          background: isLoggedIn ? "#10B98120" : "#EF444420",
-          border: `2px solid ${isLoggedIn ? "#10B981" : "#EF4444"}`,
-          borderRadius: "8px"
-        }}>
-          {isLoggedIn ? (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold' }}>✅ {userEmail}</span>
-                <button onClick={handleLogout} style={{ background: "#EF4444", color: "white", border: "none", padding: "6px 12px", borderRadius: "5px" }}>
-                  Odjavi se
-                </button>
+        {/* Ako app nije otključana, ne prikazuj sadržaj */}
+        {!appUnlocked ? (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '100vh',
+            fontSize: '18px',
+            color: '#666'
+          }}>
+            🔐 Aplikacija je zaključana...
+          </div>
+        ) : (
+          <>
+            {/* Password Modal za Google Drive operacije */}
+            {showPasswordModal && (
+              <PasswordModal
+                operation={pendingOperation}
+                onConfirm={handlePasswordConfirm}
+                onCancel={handlePasswordCancel}
+              />
+            )}
+
+            {/* GORNJI BLOK - PRIJAVA, UČITAJ, SAČUVAJ */}
+            <div style={{ 
+              marginBottom: "10px", 
+              padding: "10px", 
+              background: isLoggedIn ? "#10B98120" : "#EF444420",
+              border: `2px solid ${isLoggedIn ? "#10B981" : "#EF4444"}`,
+              borderRadius: "8px"
+            }}>
+              {isLoggedIn ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 'bold' }}>✅ {userEmail}</span>
+                    <button onClick={handleLogout} style={{ background: "#EF4444", color: "white", border: "none", padding: "6px 12px", borderRadius: "5px" }}>
+                      Odjavi se
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button onClick={triggerLoadFromDrive} disabled={loading} style={{ flex: 1, background: "#3B82F6", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
+                      {loading ? "⏳ Učitavam..." : "📂 Učitaj"}
+                    </button>
+                    <button onClick={triggerSaveToDrive} disabled={loading} style={{ flex: 1, background: "#10B981", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
+                      {loading ? "⏳ Čuvam..." : "💾 Sačuvaj"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>🔐 Niste prijavljeni</span>
+                  <button onClick={handleLogin} style={{ background: "#10B981", color: "white", border: "none", padding: "6px 12px", borderRadius: "5px" }}>
+                    Google prijava
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* BLOK SA STANJEM */}
+            <div style={{
+              marginBottom: '10px',
+              padding: '12px',
+              background: '#FFFBEB',
+              border: '2px solid #F59E0B',
+              borderRadius: '10px',
+              textAlign: 'center'
+            }}>
+              <h3 style={{ margin: '0 0 8px 0', color: '#92400E' }}>📋 Trenutno stanje</h3>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#D97706', marginBottom: '8px' }}>
+                {getCurrentCashState().toFixed(2)} €
               </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                <button onClick={triggerLoadFromDrive} disabled={loading} style={{ flex: 1, background: "#3B82F6", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
-                  {loading ? "⏳ Učitavam..." : "📂 Učitaj"}
-                </button>
-                <button onClick={triggerSaveToDrive} disabled={loading} style={{ flex: 1, background: "#10B981", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
-                  {loading ? "⏳ Čuvam..." : "💾 Sačuvaj"}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>🔐 Niste prijavljeni</span>
-              <button onClick={handleLogin} style={{ background: "#10B981", color: "white", border: "none", padding: "6px 12px", borderRadius: "5px" }}>
-                Google prijava
+              <button onClick={kopirajStanje} style={{ background: "#10B981", color: "white", border: "none", padding: "8px 16px", borderRadius: "6px" }}>
+                Kopiraj
               </button>
             </div>
-          )}
-        </div>
 
-        {/* BLOK SA STANJEM */}
-        <div style={{
-          marginBottom: '10px',
-          padding: '12px',
-          background: '#FFFBEB',
-          border: '2px solid #F59E0B',
-          borderRadius: '10px',
-          textAlign: 'center'
-        }}>
-          <h3 style={{ margin: '0 0 8px 0', color: '#92400E' }}>📋 Trenutno stanje</h3>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#D97706', marginBottom: '8px' }}>
-            {getCurrentCashState().toFixed(2)} €
-          </div>
-          <button onClick={kopirajStanje} style={{ background: "#10B981", color: "white", border: "none", padding: "8px 16px", borderRadius: "6px" }}>
-            Kopiraj
-          </button>
-        </div>
+            {/* NAVIGACIJA */}
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "15px" }}>
+              <Link to="/"><button style={{ flex: 1, background: "#2563eb", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
+                {editingDay ? "✏️ Edit Dan" : "📝 Unos dana"}
+              </button></Link>
+              <Link to="/summary"><button style={{ flex: 1, background: "#8B5CF6", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
+                📂 Sumarni pregled
+              </button></Link>
+              {editingDay && (
+                <button onClick={handleCancelEdit} style={{ background: "#6B7280", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
+                  ❌ Otkaži
+                </button>
+              )}
+              <button onClick={() => manualBackup(days)} style={{ flex: 1, background: "#F59E0B", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
+                💾 Backup
+              </button>
+            </div>
 
-        {/* NAVIGACIJA */}
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "15px" }}>
-          <Link to="/"><button style={{ flex: 1, background: "#2563eb", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
-            {editingDay ? "✏️ Edit Dan" : "📝 Unos dana"}
-          </button></Link>
-          <Link to="/summary"><button style={{ flex: 1, background: "#8B5CF6", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
-            📂 Sumarni pregled
-          </button></Link>
-          {editingDay && (
-            <button onClick={handleCancelEdit} style={{ background: "#6B7280", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
-              ❌ Otkaži
-            </button>
-          )}
-          <button onClick={() => manualBackup(days)} style={{ flex: 1, background: "#F59E0B", color: "white", border: "none", padding: "10px", borderRadius: "6px" }}>
-            💾 Backup
-          </button>
-        </div>
-
-        {/* SADRŽAJ */}
-        <Routes>
-          <Route path="/" element={
-            <DayEntry key={days.length} onSave={handleSave} initialData={editingDay} onCancel={editingDay ? handleCancelEdit : null} days={days} />
-          } />
-          <Route path="/summary" element={
-            <SummaryView days={days} onDeleteDay={handleDeleteDay} onEditDay={handleEditDay} />
-          } />
-        </Routes>
+            {/* SADRŽAJ */}
+            <Routes>
+              <Route path="/" element={
+                <DayEntry key={days.length} onSave={handleSave} initialData={editingDay} onCancel={editingDay ? handleCancelEdit : null} days={days} />
+              } />
+              <Route path="/summary" element={
+                <SummaryView days={days} onDeleteDay={handleDeleteDay} onEditDay={handleEditDay} />
+              } />
+            </Routes>
+          </>
+        )}
       </div>
     </Router>
   );
