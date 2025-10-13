@@ -14,6 +14,143 @@ import {
   logout
 } from "./googleDrive";
 
+// PasswordModal komponenta
+const PasswordModal = ({ onConfirm, onCancel, operation }) => {
+  const [password, setPassword] = useState('');
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Šifre koje ste naveli
+    const correctPassword = operation === 'load' ? '1122' : '2233';
+    const operationName = operation === 'load' ? 'učitavanje' : 'čuvanje';
+    
+    if (password === correctPassword) {
+      onConfirm();
+    } else {
+      alert(`❌ Pogrešna šifra za ${operationName}!`);
+      setPassword('');
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10000
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '25px',
+        borderRadius: '15px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+        width: '90%',
+        maxWidth: '400px',
+        textAlign: 'center'
+      }}>
+        <h3 style={{ 
+          margin: '0 0 20px 0', 
+          color: '#2563eb',
+          fontSize: '20px'
+        }}>
+          🔐 KONOBARI (14)
+        </h3>
+        
+        <div style={{
+          background: '#f8f9fa',
+          padding: '15px',
+          borderRadius: '10px',
+          marginBottom: '20px',
+          border: '2px solid #e2e8f0'
+        }}>
+          <strong>Potvrda {operation === 'load' ? 'učitavanje' : 'čuvanje'}</strong>
+          <p style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#666' }}>
+            Unesite lozinku za {operation === 'load' ? 'učitavanje' : 'čuvanje'} podataka:
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Lozinka"
+            style={{
+              width: '100%',
+              padding: '12px',
+              fontSize: '16px',
+              border: '2px solid #e2e8f0',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}
+            autoFocus
+          />
+
+          {/* Lista konobara kao na slici */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+            marginBottom: '20px',
+            fontSize: '14px'
+          }}>
+            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>MILOS</div>
+            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>JOVAN</div>
+            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>RANKO</div>
+            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>BALSA</div>
+            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>JAŠKE</div>
+            <div style={{ fontWeight: 'bold', color: '#2563eb' }}>MARKO</div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{
+                flex: 1,
+                background: '#EF4444',
+                color: 'white',
+                border: 'none',
+                padding: '12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              Otkáži
+            </button>
+            <button
+              type="submit"
+              style={{
+                flex: 1,
+                background: '#10B981',
+                color: 'white',
+                border: 'none',
+                padding: '12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              Potvrdí
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [days, setDays] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -21,6 +158,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
   const [hasLocalData, setHasLocalData] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingOperation, setPendingOperation] = useState(null); // 'load' ili 'save'
 
   // Učitaj lokalne podatke
   useEffect(() => {
@@ -58,7 +197,18 @@ function App() {
     initAuth();
   }, []);
 
-  // Učitavanje sa Drive-a
+  // Funkcije koje pokreću password modal
+  const triggerLoadFromDrive = () => {
+    setPendingOperation('load');
+    setShowPasswordModal(true);
+  };
+
+  const triggerSaveToDrive = () => {
+    setPendingOperation('save');
+    setShowPasswordModal(true);
+  };
+
+  // Stvarne implementacije koje se pozivaju nakon password provjere
   const loadDataFromDrive = async () => {
     if (hasLocalData && days.length > 0) {
       const confirmLoad = window.confirm(
@@ -97,6 +247,24 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Password confirmation handler
+  const handlePasswordConfirm = () => {
+    setShowPasswordModal(false);
+    if (pendingOperation === 'load') {
+      loadDataFromDrive();
+    } else if (pendingOperation === 'save') {
+      saveDataToDrive();
+    }
+    setPendingOperation(null);
+  };
+
+  // Password cancel handler
+  const handlePasswordCancel = () => {
+    setShowPasswordModal(false);
+    setPendingOperation(null);
+    showSyncStatus("❌ Operacija otkazana", "info");
   };
 
   // Čuvanje dana lokalno
@@ -160,6 +328,15 @@ function App() {
   return (
     <Router>
       <div style={{ padding: "10px", maxWidth: "800px", margin: "0 auto" }}>
+        {/* Password Modal */}
+        {showPasswordModal && (
+          <PasswordModal
+            operation={pendingOperation}
+            onConfirm={handlePasswordConfirm}
+            onCancel={handlePasswordCancel}
+          />
+        )}
+
         {/* GORNJI BLOK - PRIJAVA, UČITAJ, SAČUVAJ */}
         <div style={{ 
           marginBottom: "10px", 
@@ -177,10 +354,10 @@ function App() {
                 </button>
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                <button onClick={loadDataFromDrive} disabled={loading} style={{ flex: 1, background: "#3B82F6", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
+                <button onClick={triggerLoadFromDrive} disabled={loading} style={{ flex: 1, background: "#3B82F6", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
                   {loading ? "⏳ Učitavam..." : "📂 Učitaj"}
                 </button>
-                <button onClick={saveDataToDrive} disabled={loading} style={{ flex: 1, background: "#10B981", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
+                <button onClick={triggerSaveToDrive} disabled={loading} style={{ flex: 1, background: "#10B981", color: "white", border: "none", padding: "8px", borderRadius: "5px" }}>
                   {loading ? "⏳ Čuvam..." : "💾 Sačuvaj"}
                 </button>
               </div>
