@@ -274,7 +274,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             pre { 
               background: #f4f4f4; 
               padding: 10px; 
-              border-radius: 6px;
+              borderRadius: 6px;
               white-space: pre-wrap;
               font-family: Arial, sans-serif;
               font-size: 13px;
@@ -596,156 +596,157 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                 overflow: "hidden"
               }}
             >
-              {/* ZAGLAVLJE SA DATUMOM I DUGMADIMA */}
+              {/* ZAGLAVLJE - SAMO DATUM I STRELICA */}
               <div style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center',
-                marginBottom: "15px",
-                paddingBottom: "15px",
-                borderBottom: "2px solid #e2e8f0",
+                marginBottom: expandedDays[entry.id] ? "15px" : "0",
+                paddingBottom: expandedDays[entry.id] ? "15px" : "0",
+                borderBottom: expandedDays[entry.id] ? "2px solid #e2e8f0" : "none",
                 flexWrap: 'wrap',
                 gap: '10px'
               }}>
-                <h3 
+                {/* DATUM SA STRELICOM - VELIKA KLIKABILNA POVRŠINA */}
+                <div 
                   onClick={() => toggleDayExpansion(entry.id)}
                   style={{ 
-                    color: "#2563eb", 
-                    fontSize: "18px",
-                    fontWeight: "bold",
-                    margin: 0,
-                    cursor: "pointer",
-                    flex: 1,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px'
+                    gap: '12px',
+                    cursor: "pointer",
+                    flex: 1,
+                    padding: '8px',
+                    borderRadius: '8px',
+                    background: expandedDays[entry.id] ? '#f1f5f9' : 'transparent',
+                    transition: 'all 0.3s ease',
+                    minHeight: '44px' // Povećana površina za klik
                   }}
                 >
                   <span style={{ 
-                    transform: expandedDays[entry.id] ? 'rotate(90deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.3s ease',
-                    fontSize: '16px'
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: "#2563eb"
                   }}>
-                    ➤
+                    📆 {entry.datum}
                   </span>
-                  📆 {entry.datum}
-                </h3>
-
-                <div style={{ 
-                  display: "flex", 
-                  gap: "8px",
-                  flexWrap: 'wrap'
-                }}>
-                  <button 
-                    onClick={() => handleEdit(entry)}
-                    style={{
-                      background: "#3B82F6",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      fontSize: "14px",
+                  
+                  {/* VELIKA STRELICA NA DESNOJ STRANI */}
+                  <div style={{ 
+                    marginLeft: 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '32px',
+                    height: '32px',
+                    background: '#e2e8f0',
+                    borderRadius: '50%',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <span style={{ 
+                      fontSize: '20px', // Povećana strelica
+                      transform: expandedDays[entry.id] ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s ease',
+                      color: '#4b5563',
                       fontWeight: 'bold'
-                    }}
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(entry.id)}
-                    style={{
-                      background: "#EF4444",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
+                    }}>
+                      ➤
+                    </span>
+                  </div>
                 </div>
+
+                {/* DUGMAD - RAZMAKNUTA OD STRELICE */}
+                {expandedDays[entry.id] && (
+                  <div style={{ 
+                    display: "flex", 
+                    gap: "8px",
+                    flexWrap: 'wrap',
+                    marginLeft: '15px'
+                  }}>
+                    <button 
+                      onClick={() => handleEdit(entry)}
+                      style={{
+                        background: "#3B82F6",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: 'bold',
+                        minWidth: "70px"
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(entry.id)}
+                      style={{
+                        background: "#EF4444",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: 'bold',
+                        minWidth: "70px"
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* OSNOVNI PODACI - UVEK VIDLJIVI */}
-              <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                gap: '8px', 
-                marginBottom: '15px' 
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px',
-                  background: '#f8f9fa',
-                  borderRadius: '6px'
-                }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>🧾 Fiskalni:</span>
-                  <span style={{ 
-                    fontWeight: 'bold', 
-                    color: '#1f2937',
-                    fontSize: '15px'
-                  }}>
-                    {format(entry.fiskalni)} €
-                  </span>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px',
-                  background: '#f8f9fa',
-                  borderRadius: '6px'
-                }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>💵 Sunmi:</span>
-                  <span style={{ 
-                    fontWeight: 'bold', 
-                    color: '#1f2937',
-                    fontSize: '15px'
-                  }}>
-                    {format(entry.sunmi)} €
-                  </span>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px',
-                  background: entry.rezultat >= 0 ? '#f0fdf4' : '#fef2f2',
-                  borderRadius: '6px',
-                  border: `2px solid ${entry.rezultat >= 0 ? '#10B981' : '#EF4444'}`
-                }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>📈 Razlika:</span>
-                  <span style={{ 
-                    fontWeight: 'bold', 
-                    color: entry.rezultat >= 0 ? '#10B981' : '#EF4444',
-                    fontSize: '15px'
-                  }}>
-                    {format(entry.rezultat)} €
-                  </span>
-                </div>
-              </div>
-
-              {/* PROŠIRENI DETALJI - SAKLONJENI PO DEFAULTU */}
+              {/* PROŠIRENI DETALJI */}
               {expandedDays[entry.id] && (
                 <div style={{
-                  animation: 'fadeIn 0.3s ease-in',
-                  borderTop: '2px dashed #e2e8f0',
-                  paddingTop: '15px'
+                  animation: 'fadeIn 0.3s ease-in'
                 }}>
-                  {/* DODATNI OSNOVNI PODACI */}
+                  {/* OSNOVNI PODACI */}
                   <div style={{ 
                     display: 'flex', 
                     flexDirection: 'column',
                     gap: '8px', 
                     marginBottom: '15px' 
                   }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '10px',
+                      background: '#f8f9fa',
+                      borderRadius: '6px'
+                    }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '14px' }}>🧾 Fiskalni:</span>
+                      <span style={{ 
+                        fontWeight: 'bold', 
+                        color: '#1f2937',
+                        fontSize: '15px'
+                      }}>
+                        {format(entry.fiskalni)} €
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '10px',
+                      background: '#f8f9fa',
+                      borderRadius: '6px'
+                    }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '14px' }}>💵 Sunmi:</span>
+                      <span style={{ 
+                        fontWeight: 'bold', 
+                        color: '#1f2937',
+                        fontSize: '15px'
+                      }}>
+                        {format(entry.sunmi)} €
+                      </span>
+                    </div>
+
                     <div style={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -779,6 +780,25 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                         fontSize: '15px'
                       }}>
                         {format(entry.kesNaDan || 0)} €
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '10px',
+                      background: entry.rezultat >= 0 ? '#f0fdf4' : '#fef2f2',
+                      borderRadius: '6px',
+                      border: `2px solid ${entry.rezultat >= 0 ? '#10B981' : '#EF4444'}`
+                    }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '14px' }}>📈 Razlika na dan:</span>
+                      <span style={{ 
+                        fontWeight: 'bold', 
+                        color: entry.rezultat >= 0 ? '#10B981' : '#EF4444',
+                        fontSize: '15px'
+                      }}>
+                        {format(entry.rezultat)} €
                       </span>
                     </div>
 
