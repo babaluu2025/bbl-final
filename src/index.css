@@ -1,64 +1,190 @@
+/* ======== GLOBALNA PODEŠAVANJA ======== */
 body {
   margin: 0;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  background-color: #f4f6f8;
-}
-
-h1, h2, h3 {
-  color: #2c3e50;
-}
-
-label {
-  font-weight: bold;
-  display: block;
-  margin-top: 10px;
-}
-
-input, textarea, button {
-  display: block;
-  width: 100%;
-  max-width: 400px;
-  margin: 5px 0 15px 0;
-  padding: 10px;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-
-textarea {
-  height: 80px;
-  resize: vertical;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #f9fafb;
+  color: #111827;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 15px;
 }
 
 button {
-  background-color: #2d89ef;
-  color: white;
-  border: none;
   cursor: pointer;
-  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 button:hover {
-  background-color: #1b5fbf;
+  opacity: 0.9;
+  transform: scale(1.02);
 }
 
-.app-container {
-  max-width: 800px;
-  margin: auto;
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.entries-list {
-  margin-top: 30px;
+/* ======== GLAVNI KONTEJNER ======== */
+#root {
+  width: 100%;
+  max-width: 850px;
 }
 
-.entry-box {
-  background-color: white;
+/* ======== FORME ======== */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: white;
   padding: 15px;
-  margin-bottom: 15px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-.entry-result p {
-  margin: 3px 0;
+input, select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+}
+
+/* ======== NASLOVI ======== */
+h1, h2, h3 {
+  margin: 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 22px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* ======== KARTICE (za dane i preglede) ======== */
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.card:hover {
+  transform: scale(1.01);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* ======== TABELA ======== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th, td {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+}
+
+tr:hover td {
+  background-color: #f9fafb;
+}
+
+/* ======== NOTIFIKACIJE ======== */
+.sync-notification {
+  position: fixed;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 200px;
+  max-width: 90%;
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  text-align: center;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.sync-notification.success { background-color: #10b981; }
+.sync-notification.error   { background-color: #ef4444; }
+.sync-notification.info    { background-color: #3b82f6; }
+
+/* ======== RESPONSIVE ======== */
+@media (max-width: 600px) {
+  body {
+    padding: 8px;
+  }
+  button {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+  form {
+    padding: 10px;
+  }
+  h1 {
+    font-size: 18px;
+  }
+  th, td {
+    padding: 6px;
+    font-size: 14px;
+  }
+}
+/* ======== ANIMACIJA NOTIFIKACIJA ======== */
+@keyframes pulseFade {
+  0% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.sync-notification {
+  animation: pulseFade 2s infinite ease-in-out;
+}
+
+/* Lagani fade-in kada se pojavi */
+@keyframes fadeInUp {
+  from {
+    transform: translate(-50%, 20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.sync-notification {
+  animation: fadeInUp 0.4s ease-out, pulseFade 2s infinite ease-in-out;
 }
