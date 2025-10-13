@@ -1,16 +1,21 @@
 import React, { useState } from "react";
 
-function SummaryView({ days, onDeleteDay, onEditDay }) {
+function SummaryView({ days = [], onDeleteDay, onEditDay }) {
   const [expandedDay, setExpandedDay] = useState(null);
 
-  // Sortiraj najnovije dane na vrh
-  const sortedDays = [...days].sort((a, b) => b.id - a.id);
+  // Sigurno sortiranje (ako nema ID-a koristi datum)
+  const sortedDays = [...days].sort((a, b) => {
+    if (!a || !b) return 0;
+    const aId = parseInt(a.id) || new Date(a.datum).getTime();
+    const bId = parseInt(b.id) || new Date(b.datum).getTime();
+    return bId - aId;
+  });
 
   const toggleExpand = (dayId) => {
     setExpandedDay(expandedDay === dayId ? null : dayId);
   };
 
-  if (!days || days.length === 0) {
+  if (!sortedDays || sortedDays.length === 0) {
     return (
       <div style={{ textAlign: "center", marginTop: "40px", color: "#555" }}>
         📭 Nema unesenih dana
@@ -24,17 +29,20 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
         📅 Sumarni pregled
       </h2>
 
-      {sortedDays.map((day) => {
+      {sortedDays.map((day, index) => {
+        if (!day) return null;
         const isExpanded = expandedDay === day.id;
-        const formattedDate = new Date(day.datum).toLocaleDateString("sr-RS", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        });
+        const formattedDate = day.datum
+          ? new Date(day.datum).toLocaleDateString("sr-RS", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })
+          : `Dan ${index + 1}`;
 
         return (
           <div
-            key={day.id}
+            key={day.id || index}
             style={{
               background: "white",
               marginBottom: "10px",
@@ -44,7 +52,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
               transition: "all 0.3s ease",
             }}
           >
-            {/* Gornja traka sa osnovnim info o danu */}
+            {/* Gornja traka */}
             <div
               onClick={() => toggleExpand(day.id)}
               style={{
@@ -60,25 +68,30 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             >
               <span>{formattedDate}</span>
               <span style={{ fontSize: "14px" }}>
-                💶 {day.stanje?.toFixed(2) ?? 0} €
+                💶 {(day.stanje ?? 0).toFixed(2)} €
               </span>
             </div>
 
-            {/* Prošireni prikaz detalja */}
+            {/* Prošireni deo */}
             {isExpanded && (
-              <div style={{ padding: "15px", background: "#F9FAFB" }}>
+              <div
+                style={{
+                  padding: "15px",
+                  background: "#F9FAFB",
+                  transition: "max-height 0.3s ease",
+                }}
+              >
                 <div style={{ marginBottom: "10px" }}>
                   <p><strong>Pazar:</strong> {day.pazar ?? 0} €</p>
                   <p><strong>Virmani:</strong> {day.virmani ?? 0} €</p>
                   <p><strong>Rashodi:</strong> {day.rashodi ?? 0} €</p>
                   <p><strong>Kes dobit:</strong> {day.kesDobit ?? 0} €</p>
-                  <p><strong>Stanje:</strong> {day.stanje?.toFixed(2) ?? 0} €</p>
+                  <p><strong>Stanje:</strong> {(day.stanje ?? 0).toFixed(2)} €</p>
                   {day.napomena && (
                     <p><strong>Napomena:</strong> {day.napomena}</p>
                   )}
                 </div>
 
-                {/* Dugmad */}
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     onClick={() => onEditDay(day)}
@@ -94,7 +107,6 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                   >
                     ✏️ Uredi
                   </button>
-
                   <button
                     onClick={() => {
                       if (window.confirm("Da li želite da obrišete ovaj dan?")) {
