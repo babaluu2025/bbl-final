@@ -1,152 +1,178 @@
 import React, { useState } from "react";
 
-function SummaryView({ days = [], onDeleteDay, onEditDay }) {
+function SummaryView({ data, format, printDay }) {
   const [expandedDay, setExpandedDay] = useState(null);
 
-  // Sigurno sortiranje (ako nema ID-a koristi datum)
-  const sortedDays = [...days].sort((a, b) => {
-    if (!a || !b) return 0;
-    const aId = parseInt(a.id) || new Date(a.datum).getTime();
-    const bId = parseInt(b.id) || new Date(b.datum).getTime();
-    return bId - aId;
-  });
-
-  const toggleExpand = (dayId) => {
-    setExpandedDay(expandedDay === dayId ? null : dayId);
+  const toggleDay = (date) => {
+    setExpandedDay(expandedDay === date ? null : date);
   };
 
-  if (!sortedDays || sortedDays.length === 0) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "40px", color: "#555" }}>
-        📭 Nema unesenih dana
-      </div>
-    );
-  }
+  const isMobile = window.innerWidth < 768;
 
   return (
-    <div style={{ padding: "10px" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "15px", color: "#1E3A8A" }}>
-        📅 Sumarni pregled
+    <div style={{ padding: isMobile ? "10px" : "30px" }}>
+      <h2
+        style={{
+          textAlign: "center",
+          marginBottom: "20px",
+          fontSize: isMobile ? "20px" : "28px",
+          fontWeight: "bold",
+          color: "#1f2937",
+        }}
+      >
+        📅 Dnevni izvještaji
       </h2>
 
-      {sortedDays.map((day, index) => {
-        if (!day) return null;
-        const isExpanded = expandedDay === day.id;
-        const formattedDate = day.datum
-          ? new Date(day.datum).toLocaleDateString("sr-RS", {
+      {data.length === 0 ? (
+        <p style={{ textAlign: "center", color: "#888" }}>Nema podataka</p>
+      ) : (
+        <div>
+          {data.map((entry, index) => {
+            const dateLabel = new Date(entry.date).toLocaleDateString("sr-Latn-ME", {
               day: "2-digit",
               month: "2-digit",
               year: "numeric",
-            })
-          : `Dan ${index + 1}`;
+            });
 
-        return (
-          <div
-            key={day.id || index}
-            style={{
-              background: "white",
-              marginBottom: "10px",
-              borderRadius: "10px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              overflow: "hidden",
-              transition: "all 0.3s ease",
-            }}
-          >
-            {/* Gornja traka */}
-            <div
-              onClick={() => toggleExpand(day.id)}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 16px",
-                background: "#2563eb",
-                color: "white",
-                cursor: "pointer",
-                fontWeight: "bold",
-              }}
-            >
-              <span>{formattedDate}</span>
-              <span style={{ fontSize: "14px" }}>
-                💶 {(day.stanje ?? 0).toFixed(2)} €
-              </span>
-            </div>
+            const isOpen = expandedDay === entry.date;
 
-            {/* Prošireni deo */}
-            {isExpanded && (
+            return (
               <div
+                key={index}
                 style={{
-                  padding: "15px",
-                  background: "#F9FAFB",
-                  transition: "max-height 0.3s ease",
+                  background: "#f9fafb",
+                  borderRadius: "12px",
+                  boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                  marginBottom: "15px",
+                  overflow: "hidden",
                 }}
               >
-                <div style={{ marginBottom: "10px" }}>
-                  <p><strong>Pazar:</strong> {day.pazar ?? 0} €</p>
-                  <p><strong>Virmani:</strong> {day.virmani ?? 0} €</p>
-                  <p><strong>Rashodi:</strong> {day.rashodi ?? 0} €</p>
-                  <p><strong>Kes dobit:</strong> {day.kesDobit ?? 0} €</p>
-                  <p><strong>Stanje:</strong> {(day.stanje ?? 0).toFixed(2)} €</p>
-                  {day.napomena && (
-                    <p><strong>Napomena:</strong> {day.napomena}</p>
-                  )}
+                {/* ZAGLAVLJE DANA */}
+                <div
+                  onClick={() => toggleDay(entry.date)}
+                  style={{
+                    background: "#3B82F6",
+                    color: "white",
+                    padding: "15px 20px",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontWeight: "bold",
+                    fontSize: isMobile ? "16px" : "18px",
+                  }}
+                >
+                  <span>{dateLabel}</span>
+                  <span>{isOpen ? "▲" : "▼"}</span>
                 </div>
 
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    onClick={() => onEditDay(day)}
-                    style={{
-                      flex: 1,
-                      background: "#3B82F6",
-                      color: "white",
-                      border: "none",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✏️ Uredi
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm("Da li želite da obrišete ovaj dan?")) {
-                        onDeleteDay(day.id);
-                      }
-                    }}
-                    style={{
-                      flex: 1,
-                      background: "#EF4444",
-                      color: "white",
-                      border: "none",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    🗑️ Obriši
-                  </button>
-                </div>
+                {/* SADRŽAJ DANA */}
+                {isOpen && (
+                  <div style={{ padding: isMobile ? "12px" : "20px" }}>
+                    <div
+                      style={{
+                        background: "#E0F2FE",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "2px solid #3B82F6",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <strong>💶 Prihodi:</strong>{" "}
+                      <span style={{ color: "#047857", fontWeight: "bold" }}>
+                        {format(entry.ukupnoPrihoda)} €
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        background: "#FEF2F2",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "2px solid #DC2626",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <strong>💸 Rashodi:</strong>{" "}
+                      <span style={{ color: "#DC2626", fontWeight: "bold" }}>
+                        {format(entry.ukupnoRashoda)} €
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        background: "#FFFBEB",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "2px solid #F59E0B",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold" }}>💼 Početno stanje:</span>
+                        <span
+                          style={{
+                            fontWeight: "bold",
+                            color: "#1f2937",
+                            fontSize: isMobile ? "15px" : "17px",
+                          }}
+                        >
+                          {format(entry.pocetnoStanje)} €
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: "8px",
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold" }}>🏦 Stanje kase:</span>
+                        <span
+                          style={{
+                            fontWeight: "bold",
+                            color: "#F59E0B",
+                            fontSize: isMobile ? "15px" : "17px",
+                          }}
+                        >
+                          {format(entry.stanje)} €
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* DUGME ZA ŠTAMPU */}
+                    <div style={{ textAlign: "center", marginTop: "15px" }}>
+                      <button
+                        onClick={() => printDay(entry)}
+                        style={{
+                          background: "#10B981",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "10px 20px",
+                          cursor: "pointer",
+                          fontSize: "15px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        🖨️ Štampaj ovaj dan
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
-
-      <div style={{ textAlign: "center", marginTop: "20px" }}>
-        <button
-          onClick={() => window.print()}
-          style={{
-            background: "#10B981",
-            color: "white",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-        >
-          🖨️ Štampaj izveštaj
-        </button>
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
