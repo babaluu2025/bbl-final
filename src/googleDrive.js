@@ -1,25 +1,26 @@
 // ======================================
-// GOOGLE DRIVE – FULL ORIGINAL-COMPAT
+// GOOGLE DRIVE – FINAL 2026
 // ======================================
 
-const CLIENT_ID = "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
+const CLIENT_ID =
+  "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
 let accessToken = localStorage.getItem("google_access_token") || null;
 let userEmail = localStorage.getItem("google_user_email") || null;
 
-// ======================================
-// TOKEN
-// ======================================
+// ===============================
+// TOKEN HELPERS
+// ===============================
 
 function tokenExpired() {
   const expiry = localStorage.getItem("google_token_expiry");
   return !expiry || Date.now() > Number(expiry);
 }
 
-// ======================================
-// AUTH
-// ======================================
+// ===============================
+// AUTH FUNCTIONS
+// ===============================
 
 export function handleAuthClick() {
   const redirectUri = window.location.origin;
@@ -55,14 +56,8 @@ export function checkRedirectAuth() {
   return true;
 }
 
-// ======================================
-// USER INFO (⬅️ OVO JE FALILO)
-// ======================================
-
 export async function getUserInfo() {
-  if (!accessToken || tokenExpired()) {
-    throw new Error("Not authenticated");
-  }
+  if (!accessToken || tokenExpired()) throw new Error("Not authenticated");
 
   const res = await fetch(
     "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
@@ -76,18 +71,17 @@ export async function getUserInfo() {
   const data = await res.json();
   userEmail = data.email;
   localStorage.setItem("google_user_email", userEmail);
-
   return data;
 }
 
-// ======================================
+// ===============================
 // DRIVE HELPERS
-// ======================================
+// ===============================
 
 async function findFile() {
   const res = await fetch(
     "https://www.googleapis.com/drive/v3/files?" +
-      "q=name='bbl_billing_data.json' and trashed=false&fields=files(id)",
+      "q=name='bbl_billing_data.json' and trashed=false&fields=files(id,name)",
     {
       headers: { Authorization: "Bearer " + accessToken }
     }
@@ -99,14 +93,12 @@ async function findFile() {
   return data.files?.[0] || null;
 }
 
-// ======================================
-// LOAD
-// ======================================
+// ===============================
+// LOAD / SAVE
+// ===============================
 
 export async function loadFromDrive() {
-  if (!accessToken || tokenExpired()) {
-    throw new Error("Not logged in");
-  }
+  if (!accessToken || tokenExpired()) throw new Error("Not logged in");
 
   const file = await findFile();
   if (!file) return null;
@@ -119,18 +111,11 @@ export async function loadFromDrive() {
   );
 
   if (!res.ok) throw new Error("Load failed");
-
   return await res.json();
 }
 
-// ======================================
-// SAVE
-// ======================================
-
 export async function saveToDrive(data) {
-  if (!accessToken || tokenExpired()) {
-    throw new Error("Not logged in");
-  }
+  if (!accessToken || tokenExpired()) throw new Error("Not logged in");
 
   let file = await findFile();
 
@@ -163,17 +148,20 @@ export async function saveToDrive(data) {
   );
 
   if (!res.ok) throw new Error("Save failed");
-
   return true;
 }
 
-// ======================================
-// ORIGINAL EXPORTS (BUILD SAFE)
-// ======================================
+// ===============================
+// MANUAL BACKUP
+// ===============================
 
 export function manualBackup(data) {
   return saveToDrive(data);
 }
+
+// ===============================
+// LOGOUT / STATUS
+// ===============================
 
 export function logout() {
   accessToken = null;
@@ -189,4 +177,52 @@ export function getAuthStatus() {
     userEmail,
     tokenExpired: tokenExpired()
   };
+}
+
+// ===============================
+// REPAIR AUTH & SYNC STATUS
+// ===============================
+
+export function repairAuth() {
+  if (
+    window.confirm(
+      "Želite li popraviti Google prijavu? Ovo će očistiti SAMO Google podatke."
+    )
+  ) {
+    localStorage.removeItem("google_access_token");
+    localStorage.removeItem("google_token_expiry");
+    localStorage.removeItem("google_user_email");
+    accessToken = null;
+    userEmail = null;
+    showSyncStatus("🛠️ Čišćenje starih Google podataka...", "info");
+    return true;
+  }
+  return false;
+}
+
+export function showSyncStatus(message, type = "info") {
+  const existing = document.getElementById("sync-status-overlay");
+  if (existing) document.body.removeChild(existing);
+
+  const el = document.createElement("div");
+  el.id = "sync-status-overlay";
+  el.textContent = message;
+  el.style.position = "fixed";
+  el.style.top = "0";
+  el.style.left = "0";
+  el.style.right = "0";
+  el.style.background =
+    type === "success" ? "#10B981" : type === "error" ? "#EF4444" : "#3B82F6";
+  el.style.color = "white";
+  el.style.textAlign = "center";
+  el.style.padding = "12px";
+  el.style.zIndex = "10000";
+  el.style.fontSize = "14px";
+  el.style.fontWeight = "bold";
+
+  document.body.appendChild(el);
+
+  setTimeout(() => {
+    if (document.body.contains(el)) document.body.removeChild(el);
+  }, 3000);
 }
