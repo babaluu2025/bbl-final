@@ -1,5 +1,6 @@
 // src/googleDrive.js
-const CLIENT_ID = "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
+const CLIENT_ID =
+  "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
 
 let accessToken = localStorage.getItem("google_access_token") || null;
 let userEmail = localStorage.getItem("google_user_email") || null;
@@ -8,7 +9,7 @@ let userEmail = localStorage.getItem("google_user_email") || null;
 
 function checkTokenExpiry() {
   const expiry = localStorage.getItem("google_token_expiry");
-  if (expiry && Date.now() > parseInt(expiry)) {
+  if (expiry && Date.now() > Number(expiry)) {
     localStorage.removeItem("google_access_token");
     localStorage.removeItem("google_token_expiry");
     localStorage.removeItem("google_user_email");
@@ -25,13 +26,12 @@ export function handleAuthClick() {
   const redirectUri = window.location.origin;
 
   const authUrl =
-    `https://accounts.google.com/o/oauth2/v2/auth?` +
+    "https://accounts.google.com/o/oauth2/v2/auth?" +
     `client_id=${CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `response_type=token&` +
-    `scope=https://www.googleapis.com/auth/drive&` + // ✅ 2026 FIX
+    `scope=https://www.googleapis.com/auth/drive&` + // ✅ 2026 SAFE
     `include_granted_scopes=true&` +
-    `state=bbl_billing_app&` +
     `prompt=consent`;
 
   window.location.href = authUrl;
@@ -39,22 +39,22 @@ export function handleAuthClick() {
 
 export function checkRedirectAuth() {
   const hash = window.location.hash;
-  if (hash.includes("access_token")) {
-    const params = new URLSearchParams(hash.substring(1));
-    accessToken = params.get("access_token");
-    const expiresIn = params.get("expires_in");
+  if (!hash.includes("access_token")) return false;
 
-    if (accessToken) {
-      localStorage.setItem("google_access_token", accessToken);
-      localStorage.setItem(
-        "google_token_expiry",
-        Date.now() + expiresIn * 1000
-      );
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return true;
-    }
-  }
-  return false;
+  const params = new URLSearchParams(hash.substring(1));
+  accessToken = params.get("access_token");
+  const expiresIn = params.get("expires_in");
+
+  if (!accessToken) return false;
+
+  localStorage.setItem("google_access_token", accessToken);
+  localStorage.setItem(
+    "google_token_expiry",
+    Date.now() + Number(expiresIn) * 1000
+  );
+
+  window.history.replaceState({}, document.title, window.location.pathname);
+  return true;
 }
 
 /* ================= USER ================= */
@@ -64,7 +64,8 @@ export async function getUserInfo() {
     "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
-  if (!res.ok) throw new Error("User info error");
+
+  if (!res.ok) throw new Error("Ne mogu dobaviti user info");
 
   const data = await res.json();
   userEmail = data.email;
@@ -75,24 +76,24 @@ export async function getUserInfo() {
 /* ================= DRIVE HELPERS ================= */
 
 async function findDriveFile() {
-  const q =
+  const query =
     "name='bbl_billing_data.json' and mimeType='application/json' and trashed=false";
 
   const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`,
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`,
     { headers: { Authorization: "Bearer " + accessToken } }
   );
 
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error?.message || "Drive search error");
+    const err = await res.text();
+    throw new Error("Drive search error: " + err);
   }
 
   const data = await res.json();
   return data.files?.[0] || null;
 }
 
-/* ================= SAVE ================= */
+/* ================= SAVE (2026 SAFE) ================= */
 
 export async function saveToDrive(daysData) {
   if (checkTokenExpiry()) throw new Error("Token istekao");
@@ -105,41 +106,51 @@ export async function saveToDrive(daysData) {
     appName: "BBL Billing App",
   };
 
-  const file = await findDriveFile();
+  let file = await findDriveFile();
 
-  const form = new FormData();
-  form.append(
-    "metadata",
-    new Blob(
-      [JSON.stringify({ name: "bbl_billing_data.json", mimeType: "application/json" })],
-      { type: "application/json" }
-    )
-  );
-  form.append(
-    "file",
-    new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    })
-  );
+  // Ako fajl ne postoji – kreiraj ga JEDNOM
+  if (!file) {
+    const createRes = await fetch(
+      "https://www.googleapis.com/drive/v3/files",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + accessToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "bbl_billing_data.json",
+          mimeType: "application/json",
+        }),
+      }
+    );
 
-  let url =
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
-  let method = "POST";
+    if (!createRes.ok) {
+      const err = await createRes.text();
+      throw new Error("Ne mogu da kreiram fajl: " + err);
+    }
 
-  if (file) {
-    url = `https://www.googleapis.com/upload/drive/v3/files/${file.id}?uploadType=multipart`;
-    method = "PATCH";
+    file = await findDriveFile();
+    if (!file) throw new Error("Fajl nije pronađen nakon kreiranja");
   }
 
-  const res = await fetch(url, {
-    method,
-    headers: { Authorization: "Bearer " + accessToken },
-    body: form,
-  });
+  // UPDATE postojećeg fajla (RAW PUT – OVO RADI 2026)
+  const res = await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files/${file.id}?uploadType=media`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer " + accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload, null, 2),
+    }
+  );
 
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error?.message || "Drive save error");
+    const err = await res.text();
+    console.error("Drive SAVE error:", err);
+    throw new Error("Greška pri čuvanju na Google Drive");
   }
 
   return true;
@@ -159,7 +170,7 @@ export async function loadFromDrive() {
     { headers: { Authorization: "Bearer " + accessToken } }
   );
 
-  if (!res.ok) throw new Error("Drive load error");
+  if (!res.ok) throw new Error("Greška pri učitavanju");
 
   const data = await res.json();
   return data.days || [];
@@ -183,7 +194,7 @@ export function manualBackup(daysData) {
 
   if (ok) {
     navigator.clipboard.writeText(json);
-    alert("✅ Podaci kopirani u clipboard");
+    alert("✅ Podaci kopirani");
   } else {
     const input = prompt("Nalepi backup JSON:");
     if (!input) return;
@@ -199,16 +210,22 @@ export function manualBackup(daysData) {
 
 /* ================= STATUS ================= */
 
-export function showSyncStatus(msg, type = "info") {
+export function showSyncStatus(message, type = "info") {
   const old = document.getElementById("sync-status-overlay");
   if (old) old.remove();
 
   const el = document.createElement("div");
   el.id = "sync-status-overlay";
-  el.textContent = msg;
+  el.textContent = message;
   el.style.cssText = `
     position:fixed;top:0;left:0;right:0;
-    background:${type === "error" ? "#EF4444" : type === "success" ? "#10B981" : "#3B82F6"};
+    background:${
+      type === "error"
+        ? "#EF4444"
+        : type === "success"
+        ? "#10B981"
+        : "#3B82F6"
+    };
     color:white;text-align:center;padding:12px;
     z-index:10000;font-weight:bold;
   `;
@@ -238,13 +255,14 @@ export function logout() {
 /* ================= AUTO SYNC ================= */
 
 export async function autoSyncIfLoggedIn(daysData) {
-  const s = getAuthStatus();
-  if (!s.isLoggedIn) return false;
+  const status = getAuthStatus();
+  if (!status.isLoggedIn) return false;
 
   try {
     await saveToDrive(daysData);
     return true;
-  } catch {
+  } catch (e) {
+    console.error("Auto-sync error:", e);
     return false;
   }
 }
