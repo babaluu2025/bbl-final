@@ -2,7 +2,7 @@
 // GOOGLE DRIVE – FULL ORIGINAL-COMPAT
 // ======================================
 
-const CLIENT_ID = "TVOJ_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+const CLIENT_ID = "778110423475-l1mig1dmu8k800h1f3lns7j92svjlua0.apps.googleusercontent.com";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
 let accessToken = localStorage.getItem("google_access_token") || null;
