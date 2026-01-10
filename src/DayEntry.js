@@ -230,7 +230,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
       <label>💸 Rashodi (npr. -100 gorivo):</label>
       <textarea value={rashodiText} onChange={(e) => setRashodiText(e.target.value)} rows={3} />
 
-      <label>💰 Keš dobit (npr. +200 mirko):</label>
+      <label>💰 Keš dobit i Glovo (npr. +200 mirko-Glovo):</label>
       <textarea value={kesDobitText} onChange={(e) => setKesDobitText(e.target.value)} rows={3} />
 
       <label>💳 Uplačen pazar:</label>
