@@ -1,7 +1,7 @@
   const printDay = (entry) => {
-    // Lokalna format funkcija sa istom logikom kao globalna format
+    // Kreiramo lokalnu format funkciju
     const formatNumber = (n) => {
-      if (typeof n !== "number") return n;
+      if (typeof n !== "number") return n || "0.00";
       return n.toLocaleString("de-DE", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
@@ -13,62 +13,63 @@
         <head>
           <title>Štampanje dana</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              padding: 14px; 
+            body {
+              font-family: Arial, sans-serif;
+              padding: 14px;
               max-width: 800px;
               margin: 0 auto;
               font-size: 10px;
             }
-            .header { 
-              text-align: center; 
+            .header {
+              text-align: center;
               margin-bottom: 14px;
-              border-bottom: 1.4px solid #333;
               padding-bottom: 7px;
             }
-            h2 { 
-              margin-bottom: 7px; 
+            h2 {
+              margin: 0 0 7px 0;
               color: #2563eb;
-              font-size: 12.6px;
+              font-size: 13px;
             }
             h3 {
               margin: 0 0 14px 0;
-              font-size: 9.8px;
+              font-size: 10px;
               color: #666;
             }
-            .section { 
-              margin-bottom: 10px; 
-              padding: 8.4px;
+            .section {
+              margin-bottom: 10px;
+              padding: 9px;
               border: 1px solid #ddd;
-              border-radius: 5.6px;
+              border-radius: 6px;
               background: #fafafa;
             }
-            .section-title { 
-              font-weight: bold; 
+            .section-title {
+              font-weight: bold;
               color: #2563eb;
-              margin-bottom: 5.6px;
-              font-size: 10.5px;
+              margin-bottom: 6px;
+              font-size: 11px;
             }
-            p { 
-              margin: 4.2px 0; 
-              font-size: 9.8px;
-              word-break: break-word;
+            .row {
+              display: flex;
+              justify-content: space-between;
+              margin: 4px 0;
+              font-size: 10px;
             }
-            pre { 
-              background: #f4f4f4; 
-              padding: 7px; 
-              border-radius: 4.2px;
+            pre {
+              background: #f4f4f4;
+              padding: 7px;
+              border-radius: 4px;
               white-space: pre-wrap;
               font-family: Arial, sans-serif;
-              font-size: 9.1px;
-              margin: 5.6px 0;
+              font-size: 9px;
+              margin: 6px 0;
               line-height: 1.2;
             }
-            .total { 
-              font-weight: bold; 
+            .total {
+              font-weight: bold;
               color: #10B981;
-              margin-top: 5.6px;
-              font-size: 9.8px;
+              margin-top: 6px;
+              font-size: 10px;
+              text-align: right;
             }
             .negative { color: #EF4444; }
             .positive { color: #10B981; }
@@ -78,85 +79,106 @@
             }
             .sunmi-box {
               text-align: center;
-              padding: 7px;
-              background: ${entry.sunmiMinusRashodi >= 0 ? '#f0fdf4' : '#fef2f2'}; 
-              border-radius: 4.2px;
+              padding: 8px;
+              background: ${entry.sunmiMinusRashodi >= 0 ? '#f0fdf4' : '#fef2f2'};
+              border-radius: 5px;
               border: 1px solid ${entry.sunmiMinusRashodi >= 0 ? '#10B981' : '#EF4444'};
-              margin: 7px 0;
+              margin: 8px 0;
             }
             .sunmi-value {
-              font-size: 11.2px;
+              font-size: 12px;
               font-weight: bold;
               color: ${entry.sunmiMinusRashodi >= 0 ? '#10B981' : '#EF4444'};
             }
             .sunmi-formula {
-              font-size: 7px;
+              font-size: 8px;
               color: #666;
-              margin-top: 3.5px;
+              margin-top: 4px;
             }
             @media print {
               body { padding: 10px; }
               .no-print { display: none; }
             }
-            @media (max-width: 480px) {
-              body { padding: 7px; font-size: 8.4px; }
-              h2 { font-size: 11.2px; }
-              .section { padding: 5.6px; }
-            }
           </style>
         </head>
         <body>
           <div class="header">
-            <h2>📊 BBL Billing - Dnevni izveštaj</h2>
-            <h3>📅 Datum: ${entry.datum}</h3>
+            <h2>BBL Billing - Dnevni izveštaj</h2>
+            <h3>Datum: ${entry.datum}</h3>
           </div>
 
           <div class="section">
-            <div class="section-title">💰 Osnovni podaci:</div>
-            <p>🧾 Fiskalni: <span class="value">${formatNumber(entry.fiskalni)} €</span></p>
-            <p>💵 Sunmi: <span class="value">${formatNumber(entry.sunmi)} €</span></p>
-            <p>📊 Ukupan pazar: <span class="value">${formatNumber(entry.pazar)} €</span></p>
-            <p>💰 Keš na dan: <span class="value">${formatNumber(entry.kesNaDan || 0)} €</span></p>
-            <p>📈 Razlika: <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${formatNumber(entry.rezultat)} €</span></p>
-            <p>📉 Stvarni pazar: <span class="value">${formatNumber(entry.stvarnaUplata)} €</span></p>
-            <p>💳 Uplaćen pazar: <span class="value">${formatNumber(entry.uplacenPazar)} €</span></p>
-          </div>
-
-          <!-- SUNMI MINUS RASHODI -->
-          <div class="section">
-            <div class="section-title">💰 Sunmi minus rashodi:</div>
-            <div class="sunmi-box">
-              <div class="sunmi-value">${formatNumber(entry.sunmiMinusRashodi || 0)} €</div>
-              <div class="sunmi-formula">Sunmi: ${formatNumber(entry.sunmi)} € - Rashodi: ${formatNumber(entry.rashodi)} €</div>
+            <div class="section-title">Osnovni podaci</div>
+            <div class="row">
+              <span>Fiskalni:</span>
+              <span class="value">${formatNumber(entry.fiskalni)} €</span>
+            </div>
+            <div class="row">
+              <span>Sunmi:</span>
+              <span class="value">${formatNumber(entry.sunmi)} €</span>
+            </div>
+            <div class="row">
+              <span>Ukupan pazar:</span>
+              <span class="value">${formatNumber(entry.pazar)} €</span>
+            </div>
+            <div class="row">
+              <span>Keš na dan:</span>
+              <span class="value">${formatNumber(entry.kesNaDan || 0)} €</span>
+            </div>
+            <div class="row">
+              <span>Razlika:</span>
+              <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${formatNumber(entry.rezultat)} €</span>
+            </div>
+            <div class="row">
+              <span>Stvarni pazar:</span>
+              <span class="value">${formatNumber(entry.stvarnaUplata)} €</span>
+            </div>
+            <div class="row">
+              <span>Uplaćen pazar:</span>
+              <span class="value">${formatNumber(entry.uplacenPazar)} €</span>
             </div>
           </div>
 
           <div class="section">
-            <div class="section-title">🏦 Viza i Fakture:</div>
+            <div class="section-title">Sunmi minus rashodi</div>
+            <div class="sunmi-box">
+              <div class="sunmi-value">${formatNumber(entry.sunmiMinusRashodi || 0)} €</div>
+              <div class="sunmi-formula">${formatNumber(entry.sunmi)} € - ${formatNumber(entry.rashodi)} €</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Viza i Fakture</div>
             <pre>${entry.virmanText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${formatNumber(entry.virmani)} €</p>
+            <div class="total">Ukupno: ${formatNumber(entry.virmani)} €</div>
           </div>
 
           <div class="section">
-            <div class="section-title">💸 Rashodi:</div>
+            <div class="section-title">Rashodi</div>
             <pre>${entry.rashodiText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${formatNumber(entry.rashodi)} €</p>
+            <div class="total">Ukupno: ${formatNumber(entry.rashodi)} €</div>
           </div>
 
           <div class="section">
-            <div class="section-title">💰 Keš dobit i Glovo:</div>
+            <div class="section-title">Keš dobit i Glovo</div>
             <pre>${entry.kesDobitText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${formatNumber(entry.kesDobit)} €</p>
+            <div class="total">Ukupno: ${formatNumber(entry.kesDobit)} €</div>
           </div>
 
           <div class="section">
-            <div class="section-title">🧮 Stanje kase:</div>
-            <p>Početno stanje: <span class="value">${formatNumber(entry.pocetnoStanje)} €</span></p>
-            <p class="total">Stanje kase: <span class="value">${formatNumber(entry.stanje)} €</span></p>
+            <div class="section-title">Stanje kase</div>
+            <div class="row">
+              <span>Početno stanje:</span>
+              <span class="value">${formatNumber(entry.pocetnoStanje)} €</span>
+            </div>
+            <div class="row">
+              <span>Stanje kase:</span>
+              <span class="value">${formatNumber(entry.stanje)} €</span>
+            </div>
           </div>
 
-          <div class="no-print" style="text-align: center; margin-top: 14px; padding-top: 7px; border-top: 1px solid #ccc;">
-            <p><small>Štampano: ${new Date().toLocaleDateString('sr-RS')}</small></p>
+          <div class="no-print" style="text-align: center; margin-top: 15px; padding-top: 8px; border-top: 1px solid #ccc; font-size: 9px;">
+            <p>Štampano: ${new Date().toLocaleDateString('sr-RS')}</p>
           </div>
 
           <script>
@@ -167,7 +189,10 @@
         </body>
       </html>
     `;
+    
     const newWindow = window.open("", "_blank");
-    newWindow.document.write(html);
-    newWindow.document.close();
+    if (newWindow) {
+      newWindow.document.write(html);
+      newWindow.document.close();
+    }
   };
