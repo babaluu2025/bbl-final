@@ -84,17 +84,26 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     }
   }, [initialData]);
 
-  const parseLines = (text, forcePositive = false) => {
-    return text
-      .split('\n')
-      .map(line => {
-        const cleaned = line.replace(',', '.');
-        const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
-        if (!match) return 0;
+  // ISTA FUNKCIJA KAO U App.js
+  const parseTextToSum = (text, forcePositive = false) => {
+    if (!text) return 0;
+    
+    const lines = text.split('\n');
+    let total = 0;
+    
+    lines.forEach(line => {
+      const cleaned = line.replace(',', '.');
+      const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
+      if (match) {
         let value = parseFloat(match[0]);
         if (forcePositive) value = Math.abs(value);
-        return isNaN(value) ? 0 : value;
-      });
+        if (!isNaN(value)) {
+          total += value;
+        }
+      }
+    });
+    
+    return Math.round((total + Number.EPSILON) * 100) / 100;
   };
 
   const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
@@ -102,7 +111,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
   // DODATA FUNKCIJA ZA IZRAČUNAVANJE SUNMI MINUS RASHODI
   const calculateSunmiMinusRashodi = () => {
     const sun = parseFloat(sunmi.replace(',', '.')) || 0;
-    const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
+    const rashodi = parseTextToSum(rashodiText, true); // ISTA LOGIKA KAO U App.js
     return sun - rashodi;
   };
 
@@ -112,9 +121,10 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
     // Formiraj datum u dan.mjesec.godina formatu
     const formattedDatum = `${dan.padStart(2, '0')}.${mjesec.padStart(2, '0')}.${godina}`;
 
-    const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
-    const kesDobit = round(parseLines(kesDobitText).reduce((a, b) => a + b, 0));
-    const virmani = round(parseLines(virmanText).reduce((a, b) => a + b, 0));
+    // KORISTIMO ISTU FUNKCIJU KAO U App.js
+    const rashodi = parseTextToSum(rashodiText, true);
+    const kesDobit = parseTextToSum(kesDobitText);
+    const virmani = parseTextToSum(virmanText);
 
     const fisk = parseFloat(fiskalni.replace(',', '.')) || 0;
     const sun = parseFloat(sunmi.replace(',', '.')) || 0;
@@ -263,7 +273,7 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
           color: '#666',
           fontStyle: 'italic'
         }}>
-          Sunmi ({parseFloat(sunmi) || 0} €) - Rashodi ({round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0))} €)
+          Sunmi ({parseFloat(sunmi) || 0} €) - Rashodi ({parseTextToSum(rashodiText, true)} €)
         </div>
       </div>
 
