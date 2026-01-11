@@ -389,21 +389,30 @@ function App() {
     let newDays;
     
     // DODAJTE OVAJ KOD - računanje Sunmi minus rashodi
-    const parseTextToSum = (text) => {
+    // KORISTIMO ISTU LOGIKU KAO U DayEntry.js
+    const parseTextToSum = (text, forcePositive = false) => {
       if (!text) return 0;
-      let total = 0;
+      
       const lines = text.split('\n');
+      let total = 0;
+      
       lines.forEach(line => {
-        const match = line.match(/(\d+[\.,]?\d*)\s*€/);
+        const cleaned = line.replace(',', '.');
+        const match = cleaned.match(/[-+]?\d+(\.\d+)?/);
         if (match) {
-          total += parseFloat(match[1].replace(',', '.'));
+          let value = parseFloat(match[0]);
+          if (forcePositive) value = Math.abs(value);
+          if (!isNaN(value)) {
+            total += value;
+          }
         }
       });
-      return total;
+      
+      return Math.round((total + Number.EPSILON) * 100) / 100;
     };
 
     const virmani = parseTextToSum(dan.virmanText);
-    const rashodi = parseTextToSum(dan.rashodiText);
+    const rashodi = parseTextToSum(dan.rashodiText, true); // forcePositive za rashode
     const kesDobit = parseTextToSum(dan.kesDobitText);
     
     // OVDE SE RACUNA SUNMI MINUS RASHODI
@@ -413,7 +422,7 @@ function App() {
       ...dan,
       kesNaDan: dan.kesNaDan !== undefined 
         ? dan.kesNaDan 
-        : (dan.pazar - dan.virmani - dan.rashodi + dan.kesDobit),
+        : (dan.pazar - virmani - rashodi + kesDobit),
       virmani,
       rashodi,
       kesDobit,
