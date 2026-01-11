@@ -320,6 +320,20 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             <p>💳 Uplačen pazar: <span class="value">${format(entry.uplacenPazar)} €</span></p>
           </div>
 
+          <!-- DODATA SEKCIJA ZA SUNMI MINUS RASHODI -->
+          <div class="section">
+            <div class="section-title">💰 Sunmi minus rashodi:</div>
+            <p style="font-size: 16px; font-weight: bold; text-align: center; padding: 10px; 
+               background: ${entry.sunmiMinusRashodi >= 0 ? '#f0fdf4' : '#fef2f2'}; 
+               border-radius: 6px;
+               color: ${entry.sunmiMinusRashodi >= 0 ? '#10B981' : '#EF4444'};">
+              ${format(entry.sunmiMinusRashodi || 0)} €
+            </p>
+            <p style="text-align: center; font-size: 12px; color: #666; margin-top: 5px;">
+              (Sunmi: ${format(entry.sunmi)} € - Rashodi: ${format(entry.rashodi)} €)
+            </p>
+          </div>
+
           <div class="section">
             <div class="section-title">🏦 Viza i Fakture:</div>
             <pre>${entry.virmanText || 'Nema podataka'}</pre>
@@ -840,6 +854,42 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </div>
                   </div>
 
+                  {/* DODATA SEKCIJA ZA SUNMI MINUS RASHODI */}
+                  <div style={{
+                    marginBottom: '15px',
+                    padding: '15px',
+                    background: entry.sunmiMinusRashodi >= 0 ? '#f0fdf4' : '#fef2f2',
+                    border: `2px solid ${entry.sunmiMinusRashodi >= 0 ? '#10B981' : '#EF4444'}`,
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{
+                      fontWeight: 'bold',
+                      fontSize: '16px',
+                      color: entry.sunmiMinusRashodi >= 0 ? '#047857' : '#991b1b',
+                      marginBottom: '8px'
+                    }}>
+                      💰 Sunmi minus rashodi
+                    </div>
+                    
+                    <div style={{ 
+                      fontWeight: 'bold', 
+                      fontSize: '24px', 
+                      color: entry.sunmiMinusRashodi >= 0 ? '#10B981' : '#EF4444',
+                      marginBottom: '5px'
+                    }}>
+                      {format(entry.sunmiMinusRashodi || 0)} €
+                    </div>
+                    
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#666',
+                      fontStyle: 'italic'
+                    }}>
+                      Sunmi ({format(entry.sunmi)} €) - Rashodi ({format(entry.rashodi)} €)
+                    </div>
+                  </div>
+
                   {/* STANJE KASE */}
                   <div style={{ 
                     background: '#FFFBEB', 
@@ -949,7 +999,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                     </div>
                   </div>
 
-                  {/* Keš dobit */}
+                  {/* Keš dobit i Glovo */}
                   <div style={{ marginBottom: '15px' }}>
                     <div style={{
                       fontWeight: 'bold',
@@ -957,7 +1007,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
                       marginBottom: '8px',
                       color: '#10B981'
                     }}>
-                      💰 Keš dobit:
+                      💰 Keš dobit i Glovo:
                     </div>
                     <pre style={{ 
                       background: "#f0fdf4", 
