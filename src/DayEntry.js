@@ -99,6 +99,13 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
 
   const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
+  // DODATA FUNKCIJA ZA IZRAČUNAVANJE SUNMI MINUS RASHODI
+  const calculateSunmiMinusRashodi = () => {
+    const sun = parseFloat(sunmi.replace(',', '.')) || 0;
+    const rashodi = round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0));
+    return sun - rashodi;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -223,6 +230,42 @@ function DayEntry({ onSave, initialData, onCancel, days }) {
 
       <label>💵 Sunmi (gotovina iz aparata):</label>
       <input type="text" value={sunmi} onChange={(e) => setSunmi(e.target.value)} />
+
+      {/* DODATA SEKCIJA ZA SUNMI MINUS RASHODI */}
+      <div style={{
+        marginBottom: '15px',
+        padding: '15px',
+        background: calculateSunmiMinusRashodi() >= 0 ? '#f0fdf4' : '#fef2f2',
+        border: `2px solid ${calculateSunmiMinusRashodi() >= 0 ? '#10B981' : '#EF4444'}`,
+        borderRadius: '8px',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          fontWeight: 'bold',
+          fontSize: '16px',
+          color: calculateSunmiMinusRashodi() >= 0 ? '#047857' : '#991b1b',
+          marginBottom: '8px'
+        }}>
+          💰 Sunmi minus rashodi
+        </div>
+        
+        <div style={{ 
+          fontWeight: 'bold', 
+          fontSize: '24px', 
+          color: calculateSunmiMinusRashodi() >= 0 ? '#10B981' : '#EF4444',
+          marginBottom: '5px'
+        }}>
+          {calculateSunmiMinusRashodi().toFixed(2)} €
+        </div>
+        
+        <div style={{
+          fontSize: '12px',
+          color: '#666',
+          fontStyle: 'italic'
+        }}>
+          Sunmi ({parseFloat(sunmi) || 0} €) - Rashodi ({round(parseLines(rashodiText, true).reduce((a, b) => a + b, 0))} €)
+        </div>
+      </div>
 
       <label>🏦 Viza i Fakture (npr. +10 viza):</label>
       <textarea value={virmanText} onChange={(e) => setVirmanText(e.target.value)} rows={3} />
