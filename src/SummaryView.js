@@ -134,7 +134,7 @@
               <span class="value">${formatNumber(entry.stvarnaUplata)} €</span>
             </div>
             <div class="row">
-              <span>Uplaćen pazar:</span>
+              <span>Uplačen pazar:</span>
               <span class="value">${formatNumber(entry.uplacenPazar)} €</span>
             </div>
           </div>
@@ -160,7 +160,7 @@
           </div>
 
           <div class="section">
-            <div class="section-title">Keš dobit i Glovo</div>
+            <div class="section-title">Keš dobit</div>
             <pre>${entry.kesDobitText || 'Nema podataka'}</pre>
             <div class="total">Ukupno: ${formatNumber(entry.kesDobit)} €</div>
           </div>
