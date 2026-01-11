@@ -1,12 +1,12 @@
   const printDay = (entry) => {
-    // Lokalna format funkcija
-    const formatForPrint = (n) =>
-      typeof n === "number"
-        ? n.toLocaleString("de-DE", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        : n;
+    // Lokalna format funkcija sa istom logikom kao globalna format
+    const formatNumber = (n) => {
+      if (typeof n !== "number") return n;
+      return n.toLocaleString("de-DE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    };
 
     const html = `
       <html>
@@ -113,46 +113,46 @@
 
           <div class="section">
             <div class="section-title">💰 Osnovni podaci:</div>
-            <p>🧾 Fiskalni: <span class="value">${formatForPrint(entry.fiskalni)} €</span></p>
-            <p>💵 Sunmi: <span class="value">${formatForPrint(entry.sunmi)} €</span></p>
-            <p>📊 Ukupan pazar: <span class="value">${formatForPrint(entry.pazar)} €</span></p>
-            <p>💰 Keš na dan: <span class="value">${formatForPrint(entry.kesNaDan || 0)} €</span></p>
-            <p>📈 Razlika: <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${formatForPrint(entry.rezultat)} €</span></p>
-            <p>📉 Stvarni pazar: <span class="value">${formatForPrint(entry.stvarnaUplata)} €</span></p>
-            <p>💳 Uplaćen pazar: <span class="value">${formatForPrint(entry.uplacenPazar)} €</span></p>
+            <p>🧾 Fiskalni: <span class="value">${formatNumber(entry.fiskalni)} €</span></p>
+            <p>💵 Sunmi: <span class="value">${formatNumber(entry.sunmi)} €</span></p>
+            <p>📊 Ukupan pazar: <span class="value">${formatNumber(entry.pazar)} €</span></p>
+            <p>💰 Keš na dan: <span class="value">${formatNumber(entry.kesNaDan || 0)} €</span></p>
+            <p>📈 Razlika: <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${formatNumber(entry.rezultat)} €</span></p>
+            <p>📉 Stvarni pazar: <span class="value">${formatNumber(entry.stvarnaUplata)} €</span></p>
+            <p>💳 Uplaćen pazar: <span class="value">${formatNumber(entry.uplacenPazar)} €</span></p>
           </div>
 
           <!-- SUNMI MINUS RASHODI -->
           <div class="section">
             <div class="section-title">💰 Sunmi minus rashodi:</div>
             <div class="sunmi-box">
-              <div class="sunmi-value">${formatForPrint(entry.sunmiMinusRashodi || 0)} €</div>
-              <div class="sunmi-formula">Sunmi: ${formatForPrint(entry.sunmi)} € - Rashodi: ${formatForPrint(entry.rashodi)} €</div>
+              <div class="sunmi-value">${formatNumber(entry.sunmiMinusRashodi || 0)} €</div>
+              <div class="sunmi-formula">Sunmi: ${formatNumber(entry.sunmi)} € - Rashodi: ${formatNumber(entry.rashodi)} €</div>
             </div>
           </div>
 
           <div class="section">
             <div class="section-title">🏦 Viza i Fakture:</div>
             <pre>${entry.virmanText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${formatForPrint(entry.virmani)} €</p>
+            <p class="total">Ukupno: ${formatNumber(entry.virmani)} €</p>
           </div>
 
           <div class="section">
             <div class="section-title">💸 Rashodi:</div>
             <pre>${entry.rashodiText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${formatForPrint(entry.rashodi)} €</p>
+            <p class="total">Ukupno: ${formatNumber(entry.rashodi)} €</p>
           </div>
 
           <div class="section">
             <div class="section-title">💰 Keš dobit i Glovo:</div>
             <pre>${entry.kesDobitText || 'Nema podataka'}</pre>
-            <p class="total">Ukupno: ${formatForPrint(entry.kesDobit)} €</p>
+            <p class="total">Ukupno: ${formatNumber(entry.kesDobit)} €</p>
           </div>
 
           <div class="section">
             <div class="section-title">🧮 Stanje kase:</div>
-            <p>Početno stanje: <span class="value">${formatForPrint(entry.pocetnoStanje)} €</span></p>
-            <p class="total">Stanje kase: <span class="value">${formatForPrint(entry.stanje)} €</span></p>
+            <p>Početno stanje: <span class="value">${formatNumber(entry.pocetnoStanje)} €</span></p>
+            <p class="total">Stanje kase: <span class="value">${formatNumber(entry.stanje)} €</span></p>
           </div>
 
           <div class="no-print" style="text-align: center; margin-top: 14px; padding-top: 7px; border-top: 1px solid #ccc;">
