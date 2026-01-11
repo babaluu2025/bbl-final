@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import DayEntry from "./DayEntry";
 import SummaryView from "./SummaryView";
@@ -384,14 +384,41 @@ function App() {
     showSyncStatus("❌ Operacija otkazana", "info");
   };
 
-  // Čuvanje dana lokalno
+  // Čuvanje dana lokalno - AZURIRANO SA SUNMI MINUS RASHODI
   const handleSave = (dan) => {
     let newDays;
+    
+    // DODAJTE OVAJ KOD - računanje Sunmi minus rashodi
+    const parseTextToSum = (text) => {
+      if (!text) return 0;
+      let total = 0;
+      const lines = text.split('\n');
+      lines.forEach(line => {
+        const match = line.match(/(\d+[\.,]?\d*)\s*€/);
+        if (match) {
+          total += parseFloat(match[1].replace(',', '.'));
+        }
+      });
+      return total;
+    };
+
+    const virmani = parseTextToSum(dan.virmanText);
+    const rashodi = parseTextToSum(dan.rashodiText);
+    const kesDobit = parseTextToSum(dan.kesDobitText);
+    
+    // OVDE SE RACUNA SUNMI MINUS RASHODI
+    const sunmiMinusRashodi = (parseFloat(dan.sunmi) || 0) - rashodi;
+
     const danSaKesNaDan = {
       ...dan,
       kesNaDan: dan.kesNaDan !== undefined 
         ? dan.kesNaDan 
-        : (dan.pazar - dan.virmani - dan.rashodi + dan.kesDobit)
+        : (dan.pazar - dan.virmani - dan.rashodi + dan.kesDobit),
+      virmani,
+      rashodi,
+      kesDobit,
+      // DODAJTE OVO
+      sunmiMinusRashodi: sunmiMinusRashodi
     };
 
     if (editingDay) {
