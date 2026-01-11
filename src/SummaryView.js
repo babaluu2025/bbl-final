@@ -317,7 +317,7 @@ function SummaryView({ days, onDeleteDay, onEditDay }) {
             <p>💰 Keš na dan: <span class="value">${format(entry.kesNaDan || 0)} €</span></p>
             <p>📈 Razlika na dan: <span class="value ${entry.rezultat >= 0 ? 'positive' : 'negative'}">${format(entry.rezultat)} €</span></p>
             <p>📉 Stvarni pazar: <span class="value">${format(entry.stvarnaUplata)} €</span></p>
-            <p>💳 Uplačen pazar: <span class="value">${format(entry.uplacenPazar)} €</span></p>
+            <p>💳 Uplaćen pazar: <span class="value">${format(entry.uplacenPazar)} €</span></p>
           </div>
 
           <!-- DODATA SEKCIJA ZA SUNMI MINUS RASHODI -->
